@@ -4,13 +4,27 @@ Drift is a compact, tenant-safe graph persistence service for connected applicat
 
 It gives client applications a calm, stable path to store things, connect them, traverse relationships, and retrieve bounded aggregates—without making SQLite the application architecture.
 
-## Start Here
+## Start here
 
-- [Getting started](./docs/tutorial/getting-started.md)
-- [API reference](./docs/reference/api.md)
-- [Architecture](./ARCHITECTURE.md)
-- [Project plan](./PLAN.md)
+- [Getting started tutorial](./docs/tutorial/getting-started.md) — bootstrap a tenant, create a graph, traverse it, and run an aggregate.
+- [Data model reference](./docs/reference/model.md) — every persisted field and its purpose.
+- [API reference](./docs/reference/api.md) — routes, request rules, scopes, and errors.
+- [Architecture](./ARCHITECTURE.md) — the boundary and portability decisions behind the service.
+- [Project plan](./PLAN.md) — the original MVP intent, completed phases, and remaining delivery work.
+
+## Why it exists
+
+Most application teams do not need a graph platform. They need a small, dependable persistence layer for connected content: inventory, services, dependencies, documents, work, and other resources that already relate to one another.
+
+Drift keeps that layer explicit:
+
+- vertices are things;
+- edges are typed relationships;
+- API keys establish tenant boundaries;
+- JSON carries evolving application payloads;
+- versions protect concurrent mutations; and
+- storage remains behind an adapter boundary.
 
 ## What it is not
 
-Drift is not a hosted graph platform, workflow engine, identity provider, or arbitrary code execution environment. It is deliberately boring CRUD, traversal, and retrieval infrastructure.
+Drift is not a hosted graph platform, workflow engine, identity provider, arbitrary code execution environment, or unbounded query engine. It is deliberately boring CRUD, traversal, and declarative retrieval infrastructure.
