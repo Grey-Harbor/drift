@@ -1,0 +1,7 @@
+services:
+  drift:
+    build: .
+    ports: ['3000:3000']
+    volumes: ['drift-data:/data']
+volumes:
+  drift-data:

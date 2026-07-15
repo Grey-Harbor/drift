@@ -1,0 +1,27 @@
+# AGENTS.md
+
+## Working Rules
+
+- Use Conventional Commits: `<type>(<scope>): <description>`, imperative and under 72 characters.
+- Keep one logical change per commit. Do not prefix branches with an agent name.
+- Preserve user changes and avoid destructive git commands unless explicitly requested.
+- Keep `PLAN.md`, `ARCHITECTURE.md`, and user-facing docs aligned with behavioral changes.
+- Format all edited TypeScript, JSON, YAML, and Markdown with Prettier before handoff; use the repository's `.prettierrc.json` and do not leave compressed one-line implementation code.
+
+## Architecture Rules
+
+> Gang of Four taught us to recognize patterns. Roy Fielding taught us that good constraints create good systems. Drift explores both ideas applied to persisted application data.
+
+1. HTTP handlers contain no business logic.
+2. All mutations flow through `DriftService`.
+3. Core services depend only on interfaces, never concrete storage.
+4. SQLite is an adapter, not the application architecture.
+5. API contracts are versioned and stable; contract tests define compatibility.
+6. Framework-specific logic must not leak into core services.
+7. Convenience helpers may not bypass the service/repository boundary.
+
+## Documentation
+
+- Use Diátaxis under `docs/`: tutorial, how-to, reference, explanation.
+- Keep the root README a short landing page.
+- Write in the Grey Harbor voice: calm, practical, independent, and technically confident.
