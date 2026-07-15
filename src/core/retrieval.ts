@@ -1,4 +1,4 @@
-import type { Json, RetrieveInput, RetrieveResult } from '../../contracts/types.js';
+import type { Json, RetrieveInput, RetrieveResult } from '../contracts/types.js';
 
 type Row = Record<string, Json>;
 

@@ -16,10 +16,11 @@
 1. HTTP handlers contain no business logic.
 2. All mutations flow through `DriftService`.
 3. Core services depend only on interfaces, never concrete storage.
-4. SQLite is an adapter, not the application architecture.
-5. API contracts are versioned and stable; contract tests define compatibility.
-6. Framework-specific logic must not leak into core services.
-7. Convenience helpers may not bypass the service/repository boundary.
+4. Adapters are persistence bridges only: they map records and execute storage queries, but do not own traversal, retrieval, authorization, or other domain algorithms.
+5. SQLite is an adapter, not the application architecture.
+6. API contracts are versioned and stable; contract tests define compatibility.
+7. Framework-specific logic must not leak into core services.
+8. Convenience helpers may not bypass the service/repository boundary.
 
 ## Documentation
 

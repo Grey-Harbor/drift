@@ -3,12 +3,8 @@ import type {
   Edge,
   ListOptions,
   Page,
-  RetrieveInput,
-  RetrieveResult,
-  Scope,
   Tenant,
   TraverseInput,
-  TraverseResult,
   Vertex,
 } from '../contracts/types.js';
 
@@ -50,6 +46,11 @@ export interface DriftRepository {
   ): Edge | null;
   softDeleteEdge(tenantId: string, id: string, version: number, at: string): Edge | null;
   restoreEdge(tenantId: string, id: string, version: number, at: string): Edge | null;
-  traverse(tenantId: string, input: TraverseInput): TraverseResult;
-  retrieve(tenantId: string, input: RetrieveInput, scanLimit: number): RetrieveResult;
+  findConnectedEdges(
+    tenantId: string,
+    vertexIds: string[],
+    direction: TraverseInput['direction'],
+    edgeTypes: string[] | undefined,
+    includeDeleted: boolean,
+  ): Edge[];
 }

@@ -79,6 +79,7 @@ The first release deliberately supports Node.js and Docker/Compose only. The fol
 - arbitrary code execution, including user-supplied map/reduce functions;
 - asynchronous ETL jobs, queues, retries, schedules, and persisted derived datasets;
 - GraphQL, unrestricted graph query languages, joins, and JSON-path predicates;
-- additional storage adapters after the SQLite repository contract is proven in production.
+- additional storage adapters after the SQLite repository contract is proven in production;
+- ORM or query-builder adoption when a concrete second-adapter or shared-dialect need exists. Any such tool must remain inside adapters and must not move domain algorithms out of core.
 
 Any future phase that introduces one of these capabilities must state its tenancy, authorization, persistence, API-versioning, operational-limit, and contract-test implications before implementation.

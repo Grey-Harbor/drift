@@ -67,7 +67,7 @@ test('core requires active endpoints and applies traversal limits before delegat
       }),
     { code: 'limit_exceeded' },
   );
-  assert.equal(repo.calls.traverse, 0);
+  assert.equal(repo.calls.edgeLookup, 0);
 });
 
 test('core requires admin access to deleted data and retrieval limits', () => {
@@ -80,4 +80,52 @@ test('core requires admin access to deleted data and retrieval limits', () => {
     () => service.retrieve(admin, { source: 'vertices', includeDeleted: false, limit: 1001 }),
     { code: 'limit_exceeded' },
   );
+});
+
+test('core performs traversal through repository edge lookups', () => {
+  const { repo, service, admin } = setup();
+  const source = service.createVertex(admin, { ...vertexInput, title: 'Source' });
+  const target = service.createVertex(admin, { ...vertexInput, title: 'Target' });
+  service.createEdge(admin, {
+    fromVertexId: source.id,
+    toVertexId: target.id,
+    type: 'connects_to',
+    status: 'active',
+    data: {},
+    metadata: {},
+  });
+
+  const result = service.traverse(admin, {
+    start: source.id,
+    direction: 'out',
+    depth: 1,
+    limit: 3,
+    includeDeleted: false,
+  });
+
+  assert.equal(repo.calls.edgeLookup, 1);
+  assert.deepEqual(
+    result.vertices.map((vertex) => vertex.id).sort(),
+    [source.id, target.id].sort(),
+  );
+  assert.equal(result.edges[0]?.type, 'connects_to');
+});
+
+test('core applies declarative retrieval to repository records', () => {
+  const { service, admin } = setup();
+  service.createVertex(admin, { ...vertexInput, type: 'device', data: { cost: 2 } });
+  service.createVertex(admin, { ...vertexInput, type: 'device', data: { cost: 4 } });
+
+  const result = service.retrieve(admin, {
+    source: 'vertices',
+    projection: [{ field: 'type' }, { field: 'data.cost', as: 'cost' }],
+    groupBy: ['type'],
+    aggregates: [
+      { op: 'count', as: 'count' },
+      { op: 'sum', field: 'cost', as: 'total' },
+    ],
+    includeDeleted: false,
+  });
+
+  assert.deepEqual(result.rows, [{ type: 'device', count: 2, total: 6 }]);
 });

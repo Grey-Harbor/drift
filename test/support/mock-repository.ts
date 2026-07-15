@@ -3,11 +3,8 @@ import type {
   Edge,
   ListOptions,
   Page,
-  RetrieveInput,
-  RetrieveResult,
   Tenant,
   TraverseInput,
-  TraverseResult,
   Vertex,
 } from '../../src/contracts/types.js';
 import type { DriftRepository } from '../../src/interfaces/repository.js';
@@ -17,7 +14,7 @@ export class MockRepository implements DriftRepository {
   readonly keys = new Map<string, ApiKey & { secretHash: string }>();
   readonly vertices = new Map<string, Vertex>();
   readonly edges = new Map<string, Edge>();
-  readonly calls = { transaction: 0, createVertex: 0, createEdge: 0, traverse: 0, retrieve: 0 };
+  readonly calls = { transaction: 0, createVertex: 0, createEdge: 0, edgeLookup: 0 };
   transaction<T>(operation: () => T): T {
     this.calls.transaction++;
     return operation();
@@ -125,12 +122,25 @@ export class MockRepository implements DriftRepository {
     Object.assign(edge, { deletedAt: null, updatedAt: at, version: version + 1 });
     return edge;
   }
-  traverse(_tenantId: string, _input: TraverseInput): TraverseResult {
-    this.calls.traverse++;
-    return { vertices: [], edges: [] };
-  }
-  retrieve(_tenantId: string, _input: RetrieveInput, _scanLimit: number): RetrieveResult {
-    this.calls.retrieve++;
-    return { rows: [], scanned: 0 };
+  findConnectedEdges(
+    tenantId: string,
+    vertexIds: string[],
+    direction: TraverseInput['direction'],
+    edgeTypes: string[] | undefined,
+    includeDeleted: boolean,
+  ) {
+    this.calls.edgeLookup++;
+    return [...this.edges.values()].filter((edge) => {
+      const matchesTenant = edge.tenantId === tenantId;
+      const matchesDeletion = includeDeleted || !edge.deletedAt;
+      const matchesType = !edgeTypes?.length || edgeTypes.includes(edge.type);
+      const matchesDirection =
+        direction === 'out'
+          ? vertexIds.includes(edge.fromVertexId)
+          : direction === 'in'
+            ? vertexIds.includes(edge.toVertexId)
+            : vertexIds.includes(edge.fromVertexId) || vertexIds.includes(edge.toVertexId);
+      return matchesTenant && matchesDeletion && matchesType && matchesDirection;
+    });
   }
 }

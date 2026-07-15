@@ -17,9 +17,13 @@ flowchart LR
   Port --> SQLite["SQLite adapter and migrations"]
 ```
 
-HTTP handlers validate transport input, authenticate a Bearer key, and call `DriftService`. The service enforces tenancy, scopes, versions, graph integrity, deletion behavior, traversal limits, and retrieval limits. Only the SQLite adapter knows SQL or SQLite JSON details.
+HTTP handlers validate transport input, authenticate a Bearer key, and call `DriftService`. The service enforces tenancy, scopes, versions, graph integrity, deletion behavior, traversal limits, and retrieval limits. Core modules also execute traversal and declarative retrieval algorithms. The SQLite adapter only maps records and executes repository queries, including the narrow connected-edge lookup required by core traversal.
 
 This separation is the portability seam: a Postgres or another storage adapter may replace SQLite only by preserving the `DriftRepository` behavior and its contract tests. It must not change core service rules or public API behavior.
+
+Drift currently uses direct SQLite queries because they keep the adapter's storage work explicit. An ORM or query builder is a future adapter implementation decision, not an architectural boundary: adopting one must not place traversal, retrieval, authorization, or domain rules back into storage code.
+
+See [implementing a storage adapter](./docs/explanation/adapters.md) for the repository contract, required behavior, and compatibility checklist for a future adapter.
 
 ## Identity and tenant boundary
 

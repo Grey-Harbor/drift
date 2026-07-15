@@ -69,6 +69,32 @@ export function mapEdge(value: unknown): Edge {
   };
 }
 
+export function mapVertexPatch(patch: Partial<Vertex>): Record<string, unknown> {
+  return mapPatch(patch, ['type', 'slug', 'externalId', 'title', 'status', 'data', 'metadata']);
+}
+
+export function mapEdgePatch(patch: Partial<Edge>): Record<string, unknown> {
+  return mapPatch(patch, ['fromVertexId', 'toVertexId', 'type', 'status', 'data', 'metadata']);
+}
+
+function mapPatch(
+  patch: Record<string, unknown>,
+  allowedFields: string[],
+): Record<string, unknown> {
+  const columnNames: Record<string, string> = {
+    externalId: 'external_id',
+    fromVertexId: 'from_vertex_id',
+    toVertexId: 'to_vertex_id',
+  };
+  const columns: Record<string, unknown> = {};
+  for (const [field, value] of Object.entries(patch)) {
+    if (!allowedFields.includes(field)) continue;
+    columns[columnNames[field] ?? field] =
+      field === 'data' || field === 'metadata' ? encodeJson(value) : value;
+  }
+  return columns;
+}
+
 export const encodeCursor = (id: string) => Buffer.from(id).toString('base64url');
 export const decodeCursor = (value?: string) =>
   value ? Buffer.from(value, 'base64url').toString() : undefined;

@@ -18,6 +18,8 @@ import {
   type EdgeInput,
   type VertexInput,
 } from './record-factories.js';
+import { runRetrieval } from './retrieval.js';
+import { traverseGraph } from './traversal.js';
 
 export type { Principal } from './authorization.js';
 const now = () => new Date().toISOString();
@@ -171,13 +173,22 @@ export class DriftService {
     if (input.depth > this.limits.traverseDepth || input.limit > this.limits.traverseResults)
       throw new DriftError('limit_exceeded', 'Traversal exceeds server limits', 422);
     this.getVertex(p, input.start, input.includeDeleted);
-    return this.repo.traverse(p.tenantId, input);
+    return traverseGraph(this.repo, p.tenantId, input);
   }
   retrieve(p: Principal, input: RetrieveInput) {
     requireScope(p, 'read');
     if (input.includeDeleted) requireAdmin(p);
     if ((input.limit ?? 100) > 1000)
       throw new DriftError('limit_exceeded', 'Requested result limit exceeds server limit', 422);
-    return this.repo.retrieve(p.tenantId, input, this.limits.retrieveScan);
+    const options: ListOptions = {
+      ...input.filters,
+      limit: this.limits.retrieveScan,
+      includeDeleted: input.includeDeleted,
+    };
+    const records =
+      input.source === 'vertices'
+        ? this.repo.listVertices(p.tenantId, options).items
+        : this.repo.listEdges(p.tenantId, options).items;
+    return runRetrieval(records, input);
   }
 }
