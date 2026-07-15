@@ -1,10 +1,7 @@
-import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 import { v7 as uuidv7 } from 'uuid';
 import {
   DriftError,
-  type ApiKey,
   type Edge,
-  type Json,
   type ListOptions,
   type RetrieveInput,
   type Scope,
@@ -13,29 +10,17 @@ import {
   type Vertex,
 } from '../contracts/types.js';
 import type { DriftRepository } from '../interfaces/repository.js';
+import { createApiKey, parseApiKey, verifySecret } from './api-keys.js';
+import { requireAdmin, requireScope, type Principal } from './authorization.js';
+import {
+  createEdgeRecord,
+  createVertexRecord,
+  type EdgeInput,
+  type VertexInput,
+} from './record-factories.js';
 
-export interface Principal {
-  keyId: string;
-  tenantId: string;
-  scopes: Scope[];
-}
+export type { Principal } from './authorization.js';
 const now = () => new Date().toISOString();
-const has = (p: Principal, s: Scope) => p.scopes.includes('admin') || p.scopes.includes(s);
-const requireScope = (p: Principal, s: Scope) => {
-  if (!has(p, s)) throw new DriftError('forbidden', 'API key lacks required scope', 403);
-};
-const requireAdmin = (p: Principal) => {
-  if (!p.scopes.includes('admin')) throw new DriftError('forbidden', 'Admin scope required', 403);
-};
-const hash = (secret: string) => {
-  const salt = randomBytes(16);
-  return `${salt.toString('base64url')}.${scryptSync(secret, salt, 32).toString('base64url')}`;
-};
-const verify = (secret: string, stored: string) => {
-  const [salt, value] = stored.split('.');
-  const expected = scryptSync(secret, Buffer.from(salt, 'base64url'), 32);
-  return timingSafeEqual(expected, Buffer.from(value, 'base64url'));
-};
 const active = (v: Vertex | null) => {
   if (!v) throw new DriftError('not_found', 'Active vertex not found', 404);
   return v;
@@ -63,30 +48,22 @@ export class DriftService {
     return { tenant, key: issued };
   }
   authenticate(raw: string): Principal {
-    const [prefix, secret] = raw.split('.', 2);
-    if (!prefix || !secret) throw new DriftError('unauthorized', 'Malformed API key', 401);
-    const key = this.repo.findApiKeyByPrefix(prefix);
-    if (!key || key.revokedAt || !verify(secret, key.secretHash))
+    const parsed = parseApiKey(raw);
+    if (!parsed) throw new DriftError('unauthorized', 'Malformed API key', 401);
+    const key = this.repo.findApiKeyByPrefix(parsed.prefix);
+    if (!key || key.revokedAt || !verifySecret(parsed.secret, key.secretHash))
       throw new DriftError('unauthorized', 'Invalid API key', 401);
     this.repo.touchApiKey(key.id, now());
     return { keyId: key.id, tenantId: key.tenantId, scopes: key.scopes };
   }
-  private issueKey(tenantId: string, label: string, scopes: Scope[]) {
-    const prefix = `drift_${randomBytes(6).toString('base64url')}`;
-    const secret = randomBytes(32).toString('base64url');
-    const at = now();
-    const apiKey: ApiKey = {
-      id: uuidv7(),
-      tenantId,
-      label,
-      prefix,
-      scopes: [...new Set(scopes)],
-      createdAt: at,
-      lastUsedAt: null,
-      revokedAt: null,
-    };
-    this.repo.createApiKey({ ...apiKey, secretHash: hash(secret) });
-    return { apiKey, secret: `${prefix}.${secret}` };
+  private issueKey(
+    tenantId: string,
+    label: string,
+    scopes: import('../contracts/types.js').Scope[],
+  ) {
+    const issued = createApiKey(tenantId, label, scopes, now());
+    this.repo.createApiKey({ ...issued.apiKey, secretHash: issued.secretHash });
+    return { apiKey: issued.apiKey, secret: issued.secret };
   }
   createKey(p: Principal, label: string, scopes: Scope[]) {
     requireAdmin(p);
@@ -106,27 +83,9 @@ export class DriftService {
     this.revokeKey(p, id);
     return this.issueKey(p.tenantId, label, scopes);
   }
-  createVertex(
-    p: Principal,
-    input: Omit<Vertex, 'id' | 'tenantId' | 'version' | 'createdAt' | 'updatedAt' | 'deletedAt'>,
-  ) {
+  createVertex(p: Principal, input: VertexInput) {
     requireScope(p, 'write');
-    const at = now();
-    const v: Vertex = {
-      ...input,
-      slug: input.slug ?? null,
-      externalId: input.externalId ?? null,
-      title: input.title ?? null,
-      status: input.status ?? 'active',
-      data: input.data ?? {},
-      metadata: input.metadata ?? {},
-      id: uuidv7(),
-      tenantId: p.tenantId,
-      version: 1,
-      createdAt: at,
-      updatedAt: at,
-      deletedAt: null,
-    };
+    const v = createVertexRecord(p.tenantId, input, now());
     this.repo.createVertex(v);
     return v;
   }
@@ -162,23 +121,11 @@ export class DriftService {
     if (!v) throw new DriftError('conflict', 'Vertex was changed, active, or not found', 409);
     return v;
   }
-  createEdge(
-    p: Principal,
-    input: Omit<Edge, 'id' | 'tenantId' | 'version' | 'createdAt' | 'updatedAt' | 'deletedAt'>,
-  ) {
+  createEdge(p: Principal, input: EdgeInput) {
     requireScope(p, 'write');
     active(this.repo.getVertex(p.tenantId, input.fromVertexId, false));
     active(this.repo.getVertex(p.tenantId, input.toVertexId, false));
-    const at = now();
-    const e: Edge = {
-      ...input,
-      id: uuidv7(),
-      tenantId: p.tenantId,
-      version: 1,
-      createdAt: at,
-      updatedAt: at,
-      deletedAt: null,
-    };
+    const e = createEdgeRecord(p.tenantId, input, now());
     this.repo.createEdge(e);
     return e;
   }
