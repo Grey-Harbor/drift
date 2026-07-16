@@ -10,12 +10,14 @@ npm run cli -- bootstrap --slug homelab --name "Home Lab"
 npm run dev
 ```
 
-The bootstrap command prints a secret once. Copy it into a shell variable before it disappears from your terminal history:
+The bootstrap command creates the `homelab` tenant and its first admin key, then prints that key's secret once. Copy it into a shell variable before it disappears from your terminal history:
 
 ```bash
 export DRIFT_KEY='drift_<prefix>.<secret>'
 export DRIFT_URL='http://localhost:3000'
 ```
+
+Bootstrap with a different unique slug creates another isolated tenant; bootstrap with `homelab` again fails instead of making another key. Read [tenants, bootstrap, and API keys](../explanation/tenancy-and-api-keys.md) for the complete relationship and the correct way to add keys to an existing tenant.
 
 Check the service:
 

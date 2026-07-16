@@ -7,6 +7,7 @@ It gives client applications a calm, stable path to store things, connect them, 
 ## Start here
 
 - [Getting started tutorial](./docs/tutorial/getting-started.md) — bootstrap a tenant, create a graph, traverse it, and run an aggregate.
+- [Tenant and key administration tutorial](./docs/tutorial/administering-tenants-and-keys.md) — create isolated tenants and manage scoped service credentials.
 - [Data model reference](./docs/reference/model.md) — every persisted field and its purpose.
 - [API reference](./docs/reference/api.md) — routes, request rules, scopes, and errors.
 - [Architecture](./ARCHITECTURE.md) — the boundary and portability decisions behind the service.

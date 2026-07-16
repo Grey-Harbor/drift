@@ -37,7 +37,7 @@ Every authenticated request derives its tenant from the key. Clients never suppl
 | `write` | Create and mutate graph records.                                                       |
 | `admin` | Includes read/write; manages tenant keys, reads deleted records, and restores records. |
 
-Tenant creation and the first admin key are operator actions through the CLI. An admin key can manage keys only inside its own tenant.
+Tenant creation and the first admin key are operator actions through the CLI. Each successful bootstrap creates one new, uniquely slugged tenant and that tenant's first admin key; it does not add a key to an existing tenant. An admin key can manage keys only inside its own tenant. See [tenants, bootstrap, and API keys](./docs/explanation/tenancy-and-api-keys.md) for the full lifecycle.
 
 ## Persisted model
 
