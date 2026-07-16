@@ -2,6 +2,8 @@
 
 All graph requests use `Authorization: Bearer <key>` and live under `/v1`. The tenant is derived from that key; graph request bodies do not contain `tenantId`.
 
+Drift publishes its HTTP contract using the [OpenAPI Specification](https://spec.openapis.org/oas/latest.html). The machine-readable OpenAPI document at `GET /v1/openapi.json` is the versioned API-contract artifact for client generation, validation, and compatibility testing.
+
 ## Routes
 
 | Resource           | Operations                                                                             |
@@ -13,7 +15,7 @@ All graph requests use `Authorization: Bearer <key>` and live under `/v1`. The t
 | Retrieval          | `POST /retrieve`                                                                       |
 | Key administration | `GET/POST /admin/keys`, `DELETE /admin/keys/{id}`, `POST /admin/keys/{id}/rotate`      |
 
-`GET /v1/openapi.json` returns the machine-readable contract.
+`GET /v1/openapi.json` returns the machine-readable OpenAPI contract.
 
 ## Scopes
 
