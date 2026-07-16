@@ -28,7 +28,7 @@ curl "$DRIFT_URL/health"
 A vertex is a typed thing. Keep common display and lifecycle fields at the top level; place evolving product-specific fields in `data`.
 
 ```bash
-curl -sS -X POST "$DRIFT_URL/v1/vertices" \
+HOST_ID="$(curl -fsS -X POST "$DRIFT_URL/v1/vertices" \
   -H "Authorization: Bearer $DRIFT_KEY" \
   -H 'content-type: application/json' \
   -d '{
@@ -37,15 +37,21 @@ curl -sS -X POST "$DRIFT_URL/v1/vertices" \
     "title": "Wally",
     "data": { "ip": "10.0.0.10", "cores": 8 },
     "metadata": { "source": "manual" }
-  }'
+  }' | jq -r '.id')"
+
+echo "$HOST_ID"
 ```
 
-Copy the returned `id` as `HOST_ID`.
+This command requires [`jq`](https://jqlang.org/) and saves the returned ID in `HOST_ID` for later commands. If `jq` is unavailable, run the `curl` command without the surrounding `HOST_ID="$(...)"` and `| jq -r '.id'`, then copy the response's `id` into your shell:
+
+```bash
+export HOST_ID='the-returned-host-id'
+```
 
 ## 3. Create a service vertex
 
 ```bash
-curl -sS -X POST "$DRIFT_URL/v1/vertices" \
+SERVICE_ID="$(curl -fsS -X POST "$DRIFT_URL/v1/vertices" \
   -H "Authorization: Bearer $DRIFT_KEY" \
   -H 'content-type: application/json' \
   -d '{
@@ -54,10 +60,16 @@ curl -sS -X POST "$DRIFT_URL/v1/vertices" \
     "title": "Gitea",
     "data": { "port": 3000, "replicas": 1 },
     "metadata": { "source": "manual" }
-  }'
+  }' | jq -r '.id')"
+
+echo "$SERVICE_ID"
 ```
 
-Copy this `id` as `SERVICE_ID`.
+The service ID is now available to the edge and traversal commands below. Without `jq`, copy the response's `id` as described for `HOST_ID`:
+
+```bash
+export SERVICE_ID='the-returned-service-id'
+```
 
 ## 4. Connect the graph
 
