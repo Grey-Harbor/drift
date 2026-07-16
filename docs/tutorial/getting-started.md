@@ -76,7 +76,7 @@ export SERVICE_ID='the-returned-service-id'
 Edges are typed, directed relationships. Drift verifies that both endpoints are active and belong to the API key's tenant.
 
 ```bash
-curl -sS -X POST "$DRIFT_URL/v1/edges" \
+curl -fsS -X POST "$DRIFT_URL/v1/edges" \
   -H "Authorization: Bearer $DRIFT_KEY" \
   -H 'content-type: application/json' \
   -d "{
@@ -124,3 +124,29 @@ curl -sS -X POST "$DRIFT_URL/v1/retrieve" \
 ```
 
 Next, read the [model reference](../reference/model.md) to understand which fields are persisted and the [API reference](../reference/api.md) for updates, deletion, key management, and failure responses.
+
+## 7. Clean up the tutorial data
+
+The tutorial creates only records in Drift's local SQLite database. It does not create containers, DNS entries, files, or other external resources.
+
+To remove the graph from ordinary reads, soft-delete the host and service vertices. A newly created vertex has version `1`; deleting the host also soft-deletes its active `runs` edge.
+
+```bash
+curl -fsS -X DELETE "$DRIFT_URL/v1/vertices/$HOST_ID" \
+  -H "Authorization: Bearer $DRIFT_KEY" \
+  -H 'content-type: application/json' \
+  -d '{ "version": 1 }'
+
+curl -fsS -X DELETE "$DRIFT_URL/v1/vertices/$SERVICE_ID" \
+  -H "Authorization: Bearer $DRIFT_KEY" \
+  -H 'content-type: application/json' \
+  -d '{ "version": 1 }'
+```
+
+Soft-deleted records remain available to an admin key with `includeDeleted=true` and may be restored. If this is a disposable local installation and you want to remove the tenant, API key, and all tutorial records entirely, stop Drift and delete the local database file:
+
+```bash
+rm -rf data
+```
+
+The default database path is `./data/drift.sqlite`; do not use this reset command for an installation that contains data you want to keep.
