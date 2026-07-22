@@ -1,3 +1,5 @@
+![Drift](https://drift.greyharborsoftware.com/brand/social-card.svg)
+
 # Drift
 
 Drift is a compact, tenant-safe graph persistence service for connected application data.
