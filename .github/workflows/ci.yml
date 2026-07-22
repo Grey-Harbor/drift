@@ -1,0 +1,63 @@
+name: Verify
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run format:check
+      - run: npm run check
+      - run: npm test
+      - run: npm run build
+
+  container-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - run: docker build --tag drift:smoke .
+      - name: Verify image user and health check
+        run: |
+          test "$(docker image inspect drift:smoke --format '{{.Config.User}}')" = "node"
+          docker volume create drift-smoke-data
+          docker run --detach --name drift-smoke --publish 127.0.0.1:3000:3000 \
+            --volume drift-smoke-data:/data drift:smoke
+          for attempt in {1..20}; do
+            curl --fail --silent --show-error http://127.0.0.1:3000/health && break
+            sleep 1
+          done
+          docker exec drift-smoke node dist/cli.js bootstrap --slug smoke --name Smoke \
+            > bootstrap.json
+          node -e "const value = require('./bootstrap.json'); if (!value.key?.secret) process.exit(1)"
+      - name: Verify persisted SQLite data survives a restart
+        run: |
+          docker rm --force drift-smoke
+          docker run --detach --name drift-smoke --publish 127.0.0.1:3000:3000 \
+            --volume drift-smoke-data:/data drift:smoke
+          for attempt in {1..20}; do
+            curl --fail --silent --show-error http://127.0.0.1:3000/health && break
+            sleep 1
+          done
+          if docker exec drift-smoke node dist/cli.js bootstrap --slug smoke --name Smoke; then
+            echo 'bootstrap unexpectedly created a duplicate tenant' >&2
+            exit 1
+          fi
+      - name: Clean up smoke-test resources
+        if: always()
+        run: |
+          docker rm --force drift-smoke 2>/dev/null || true
+          docker volume rm drift-smoke-data 2>/dev/null || true
