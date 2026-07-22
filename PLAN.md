@@ -59,7 +59,7 @@ These rules are implementation constraints, not future aspirations:
 
 - [x] Node server, Docker image, Compose development setup, health endpoint, and OpenAPI document.
 - [x] Unit, adapter-integration, HTTP-contract, and mocked-client-target tests.
-- [x] MIT license, project governance, root README, architecture record, and Diátaxis documentation.
+- [x] MPL-2.0 license, project governance, root README, architecture record, and Diátaxis documentation.
 - [ ] CI workflow that runs formatting, type checks, tests, and build.
 - [ ] Published package/client distribution and release process.
 
