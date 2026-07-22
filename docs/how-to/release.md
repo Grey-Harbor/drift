@@ -33,6 +33,18 @@ The **Release container image** workflow reruns verification, builds
 `linux/amd64` and `linux/arm64` images, publishes `v0.1.0` and `latest`, attaches
 build provenance, and creates a GitHub release with the manifest digest.
 
+## Recover a failed tag release
+
+Release tags are immutable. If a tag-triggered workflow fails before publishing,
+do not delete, move, or recreate the tag. Fix the workflow through a pull request,
+then open **Actions → Release container image → Run workflow**. Enter the existing
+tag, such as `v0.1.0`, in the required `tag` field.
+
+The manual run checks out that tag, confirms that its `package.json` version
+matches the tag, and builds from the tagged commit. It then performs the same
+verification, image publication, provenance, and GitHub release steps as a
+tag-triggered run.
+
 ## Make the first package public
 
 After the first successful publish, open the package settings for
