@@ -53,19 +53,20 @@ These rules are implementation constraints, not future aspirations:
 - [x] Vertex or edge source, first-class filters, projection, grouping, standard aggregates, sort, and bounded result sets.
 - [x] Explicit JSON-path projection from `data` and `metadata`.
 - [x] No JSON-path predicates, joins, traversal within retrieval, user code, job queue, or derived-data persistence.
-- [x] Server limits on traversal depth/results and retrieval scan/results.
+- [x] Server limits on traversal depth/results and retrieval scan, group, result, and execution budgets.
 
 ### Phase 4 — Delivery and learning materials [in progress]
 
 - [x] Node server, Docker image, Compose development setup, health endpoint, and OpenAPI document.
 - [x] Unit, adapter-integration, HTTP-contract, and mocked-client-target tests.
 - [x] MPL-2.0 license, project governance, root README, architecture record, and Diátaxis documentation.
-- [ ] CI workflow that runs formatting, type checks, tests, and build.
-- [ ] Published package/client distribution and release process.
+- [-] GitHub verification workflow for formatting, type checks, tests, build, and container persistence smoke tests; pending its first GitHub run.
+- [-] Tag-driven GHCR release process for multi-architecture images, provenance, and release notes; pending the first `v0.1.0` tag.
+- [x] Docker-only v0.1.0 distribution decision. The npm package remains private and the generated typed SDK is deferred.
 
 ## Acceptance criteria
 
-The MVP is complete when a new operator can bootstrap a tenant, a client can create and connect graph records using only the documented API, and each behavioral guarantee above has contract or integration coverage. The current implementation meets the runtime and test criteria; CI and first-release work remain before a public release.
+The MVP is complete when a new operator can bootstrap a tenant, a client can create and connect graph records using only the documented API, and each behavioral guarantee above has contract or integration coverage. The current implementation is ready for GitHub verification and first-tag review; no image is public until the release workflow completes.
 
 ## Deferred enhancements
 
@@ -80,6 +81,7 @@ The first release deliberately supports Node.js and Docker/Compose only. The fol
 - asynchronous ETL jobs, queues, retries, schedules, and persisted derived datasets;
 - GraphQL, unrestricted graph query languages, joins, and JSON-path predicates;
 - additional storage adapters after the SQLite repository contract is proven in production;
+- generated, separately versioned typed client SDK and npm distribution;
 - ORM or query-builder adoption when a concrete second-adapter or shared-dialect need exists. Any such tool must remain inside adapters and must not move domain algorithms out of core.
 
 Any future phase that introduces one of these capabilities must state its tenancy, authorization, persistence, API-versioning, operational-limit, and contract-test implications before implementation.

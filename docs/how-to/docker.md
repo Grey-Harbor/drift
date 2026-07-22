@@ -1,6 +1,26 @@
 # Run Drift with Docker
 
-Docker Compose is the supported way to run a self-contained local Drift service. The Compose volume keeps the SQLite database outside the container lifecycle, so rebuilding or restarting the service does not discard tenants, API keys, or graph records.
+Docker Compose is the supported way to run a self-contained local Drift service. The Compose volume keeps the SQLite database outside the container lifecycle, so rebuilding or restarting the service does not discard tenants, API keys, or graph records. Public releases are available at `ghcr.io/grey-harbor/drift` for `linux/amd64` and `linux/arm64`.
+
+## Run a published release
+
+Create a durable volume and start an explicit image version:
+
+```bash
+docker volume create drift-data
+docker run --detach --name drift --publish 3000:3000 \
+  --volume drift-data:/data \
+  ghcr.io/grey-harbor/drift:v0.1.0
+```
+
+Use a release tag for a readable deployment pin, or the digest recorded in the GitHub
+release for an immutable one. `latest` is convenient for evaluation but is not the
+recommended production pin. Verify the service, then bootstrap through the same volume:
+
+```bash
+curl http://localhost:3000/health
+docker exec drift node dist/cli.js bootstrap --slug acme --name "Acme Inc."
+```
 
 ## Start the service
 
@@ -45,7 +65,7 @@ The service is now running and `DRIFT_KEY` is available. Continue at [step 2 of 
 
 ## Persistence and backups
 
-The Compose volume stores the SQLite database at `/data/drift.sqlite` inside the container. It persists across normal `docker compose down` and later `up` commands. Back up the volume/database while the service is stopped, or use SQLite's online backup tooling for a live deployment.
+The Compose volume stores the SQLite database at `/data/drift.sqlite` inside the container. It persists across normal `docker compose down` and later `up` commands. Back up the volume/database while the service is stopped, or use SQLite's online backup tooling for a live deployment. Before replacing a pinned image version, take a backup and retain the prior image tag so you can roll back the container if needed.
 
 To remove the service container but preserve data:
 

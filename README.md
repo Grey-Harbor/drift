@@ -10,8 +10,25 @@ It gives client applications a calm, stable path to store things, connect them, 
 - [Tenant and key administration tutorial](./docs/tutorial/administering-tenants-and-keys.md) — create isolated tenants and manage scoped service credentials.
 - [Data model reference](./docs/reference/model.md) — every persisted field and its purpose.
 - [API reference](./docs/reference/api.md) — routes, request rules, scopes, and errors.
+- [Release guide](./docs/how-to/release.md) — the verified GHCR publishing path.
 - [Architecture](./ARCHITECTURE.md) — the boundary and portability decisions behind the service.
 - [Project plan](./PLAN.md) — the original MVP intent, completed phases, and remaining delivery work.
+
+## Run the public image
+
+Drift releases are Docker images at `ghcr.io/grey-harbor/drift`. Pin a production
+deployment to a release tag or, preferably, its published digest:
+
+```bash
+docker volume create drift-data
+docker run --detach --name drift --publish 3000:3000 \
+  --volume drift-data:/data \
+  ghcr.io/grey-harbor/drift:v0.1.0
+```
+
+The image supports `linux/amd64` and `linux/arm64`. Continue with the
+[Docker guide](./docs/how-to/docker.md) to bootstrap a tenant and preserve the
+one-time admin-key secret.
 
 ## Why it exists
 
