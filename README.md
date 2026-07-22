@@ -16,19 +16,10 @@ It gives client applications a calm, stable path to store things, connect them, 
 
 ## Run the public image
 
-Drift releases are Docker images at `ghcr.io/grey-harbor/drift`. Pin a production
-deployment to a release tag or, preferably, its published digest:
-
-```bash
-docker volume create drift-data
-docker run --detach --name drift --publish 3000:3000 \
-  --volume drift-data:/data \
-  ghcr.io/grey-harbor/drift:v0.1.0
-```
-
-The image supports `linux/amd64` and `linux/arm64`. Continue with the
-[Docker guide](./docs/how-to/docker.md) to bootstrap a tenant and preserve the
-one-time admin-key secret.
+Drift releases are Docker images at `ghcr.io/grey-harbor/drift` for
+`linux/amd64` and `linux/arm64`. Follow the [Docker guide](./docs/how-to/docker.md)
+to start a pinned image, bootstrap its tenant, and preserve the one-time admin-key
+secret.
 
 ## Why it exists
 

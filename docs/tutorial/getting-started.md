@@ -1,23 +1,23 @@
-# Getting started: model a small service graph
+# Getting started: model a small commerce graph
 
-This tutorial creates a tenant, starts Drift, stores a host and a service, connects them, traverses the relationship, and calculates a small aggregate. It uses `curl` so the API remains visible.
+This tutorial creates an Acme Inc. tenant, starts Drift, stores a product and an invoice, connects them, traverses the relationship, and calculates a small aggregate. The invoice records an Anvil purchased by Wile E. Coyote. It uses `curl` so the API remains visible.
 
 ## 1. Install, bootstrap, and run
 
 ```bash
 npm install
-npm run cli -- bootstrap --slug homelab --name "Home Lab"
+npm run cli -- bootstrap --slug acme --name "Acme Inc."
 npm run dev
 ```
 
-The bootstrap command creates the `homelab` tenant and its first admin key, then prints that key's secret once. Copy it into a shell variable before it disappears from your terminal history:
+The bootstrap command creates the `acme` tenant and its first admin key, then prints that key's secret once. Copy it into a shell variable before it disappears from your terminal history:
 
 ```bash
 export DRIFT_KEY='drift_<prefix>.<secret>'
 export DRIFT_URL='http://localhost:3000'
 ```
 
-Bootstrap with a different unique slug creates another isolated tenant; bootstrap with `homelab` again fails instead of making another key. Read [tenants, bootstrap, and API keys](../explanation/tenancy-and-api-keys.md) for the complete relationship and the correct way to add keys to an existing tenant.
+Bootstrap with a different unique slug creates another isolated tenant; bootstrap with `acme` again fails instead of making another key. Read [tenants, bootstrap, and API keys](../explanation/tenancy-and-api-keys.md) for the complete relationship and the correct way to add keys to an existing tenant.
 
 Check the service:
 
@@ -25,52 +25,56 @@ Check the service:
 curl "$DRIFT_URL/health"
 ```
 
-## 2. Create a host vertex
+## 2. Create a product vertex
 
 A vertex is a typed thing. Keep common display and lifecycle fields at the top level; place evolving product-specific fields in `data`.
 
 ```bash
-HOST_ID="$(curl -fsS -X POST "$DRIFT_URL/v1/vertices" \
+PRODUCT_ID="$(curl -fsS -X POST "$DRIFT_URL/v1/vertices" \
   -H "Authorization: Bearer $DRIFT_KEY" \
   -H 'content-type: application/json' \
   -d '{
-    "type": "host",
-    "slug": "wally",
-    "title": "Wally",
-    "data": { "ip": "10.0.0.10", "cores": 8 },
-    "metadata": { "source": "manual" }
+    "type": "product",
+    "slug": "anvil",
+    "title": "Acme Anvil",
+    "data": { "sku": "ACME-ANVIL-001", "unitPrice": 99.95 },
+    "metadata": { "source": "catalog" }
   }' | jq -r '.id')"
 
-echo "$HOST_ID"
+echo "$PRODUCT_ID"
 ```
 
-This command requires [`jq`](https://jqlang.org/) and saves the returned ID in `HOST_ID` for later commands. If `jq` is unavailable, run the `curl` command without the surrounding `HOST_ID="$(...)"` and `| jq -r '.id'`, then copy the response's `id` into your shell:
+This command requires [`jq`](https://jqlang.org/) and saves the returned ID in `PRODUCT_ID` for later commands. If `jq` is unavailable, run the `curl` command without the surrounding `PRODUCT_ID="$(...)"` and `| jq -r '.id'`, then copy the response's `id` into your shell:
 
 ```bash
-export HOST_ID='the-returned-host-id'
+export PRODUCT_ID='the-returned-product-id'
 ```
 
-## 3. Create a service vertex
+## 3. Create an invoice vertex
 
 ```bash
-SERVICE_ID="$(curl -fsS -X POST "$DRIFT_URL/v1/vertices" \
+INVOICE_ID="$(curl -fsS -X POST "$DRIFT_URL/v1/vertices" \
   -H "Authorization: Bearer $DRIFT_KEY" \
   -H 'content-type: application/json' \
   -d '{
-    "type": "service",
-    "slug": "gitea",
-    "title": "Gitea",
-    "data": { "port": 3000, "replicas": 1 },
-    "metadata": { "source": "manual" }
+    "type": "invoice",
+    "slug": "acme-1001",
+    "title": "Invoice ACME-1001",
+    "data": {
+      "number": "ACME-1001",
+      "customer": "Wile E. Coyote",
+      "total": 99.95
+    },
+    "metadata": { "source": "sales" }
   }' | jq -r '.id')"
 
-echo "$SERVICE_ID"
+echo "$INVOICE_ID"
 ```
 
-The service ID is now available to the edge and traversal commands below. Without `jq`, copy the response's `id` as described for `HOST_ID`:
+The invoice ID is now available to the edge and traversal commands below. Without `jq`, copy the response's `id` as described for `PRODUCT_ID`:
 
 ```bash
-export SERVICE_ID='the-returned-service-id'
+export INVOICE_ID='the-returned-invoice-id'
 ```
 
 ## 4. Connect the graph
@@ -82,30 +86,30 @@ curl -fsS -X POST "$DRIFT_URL/v1/edges" \
   -H "Authorization: Bearer $DRIFT_KEY" \
   -H 'content-type: application/json' \
   -d "{
-    \"fromVertexId\": \"$HOST_ID\",
-    \"toVertexId\": \"$SERVICE_ID\",
-    \"type\": \"runs\",
-    \"data\": { \"runtime\": \"container\" }
+    \"fromVertexId\": \"$PRODUCT_ID\",
+    \"toVertexId\": \"$INVOICE_ID\",
+    \"type\": \"appears_on\",
+    \"data\": { \"quantity\": 1, \"unitPrice\": 99.95 }
   }"
 ```
 
-## 5. Traverse from the host
+## 5. Traverse from the product
 
 ```bash
 curl -sS -X POST "$DRIFT_URL/v1/traverse" \
   -H "Authorization: Bearer $DRIFT_KEY" \
   -H 'content-type: application/json' \
   -d "{
-    \"start\": \"$HOST_ID\",
+    \"start\": \"$PRODUCT_ID\",
     \"direction\": \"out\",
-    \"edgeTypes\": [\"runs\"],
+    \"edgeTypes\": [\"appears_on\"],
     \"depth\": 1,
     \"limit\": 20,
     \"includeDeleted\": false
   }"
 ```
 
-The result contains the start host, the Gitea vertex, and the `runs` edge.
+The result contains the Acme Anvil product, its invoice, and the `appears_on` edge.
 
 ## 6. Retrieve an aggregate
 
@@ -131,15 +135,15 @@ Next, read the [model reference](../reference/model.md) to understand which fiel
 
 The tutorial creates only records in Drift's local SQLite database. It does not create containers, DNS entries, files, or other external resources.
 
-To remove the graph from ordinary reads, soft-delete the host and service vertices. A newly created vertex has version `1`; deleting the host also soft-deletes its active `runs` edge.
+To remove the graph from ordinary reads, soft-delete the product and invoice vertices. A newly created vertex has version `1`; deleting the product also soft-deletes its active `appears_on` edge.
 
 ```bash
-curl -fsS -X DELETE "$DRIFT_URL/v1/vertices/$HOST_ID" \
+curl -fsS -X DELETE "$DRIFT_URL/v1/vertices/$PRODUCT_ID" \
   -H "Authorization: Bearer $DRIFT_KEY" \
   -H 'content-type: application/json' \
   -d '{ "version": 1 }'
 
-curl -fsS -X DELETE "$DRIFT_URL/v1/vertices/$SERVICE_ID" \
+curl -fsS -X DELETE "$DRIFT_URL/v1/vertices/$INVOICE_ID" \
   -H "Authorization: Bearer $DRIFT_KEY" \
   -H 'content-type: application/json' \
   -d '{ "version": 1 }'
