@@ -60,7 +60,12 @@ Each aggregate uses `as` to name its result. This is the MapReduce aspect of the
 
 ### 5. Sort, limit, and return
 
-`sort` orders the final rows by projected field or aggregate name. `limit` caps returned rows. Drift also enforces non-negotiable server ceilings on input scan size, result count, traversal depth, and traversal results. A client may ask for a lower bound, never a higher one.
+`sort` orders the final rows by projected field or aggregate name. `limit` caps returned rows. Drift also enforces non-negotiable server ceilings on input scan size, group count, result count, traversal depth, and traversal results. A client may ask for a lower bound, never a higher one.
+
+The default ceilings are 5,000 scanned records, 1,000 groups, 1,000 returned rows,
+and a 250 ms cooperative retrieval budget. Drift checks the budget between stages and
+while processing records; it is a bounded synchronous request budget, not a general
+purpose execution sandbox. Exceeding a ceiling returns `422 limit_exceeded`.
 
 The response is synchronous and includes `rows` plus `scanned`, the number of source records considered. It does not write vertices or edges, save a dataset, create an event, or enqueue background work.
 

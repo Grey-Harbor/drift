@@ -58,7 +58,12 @@ export class MockRepository implements DriftRepository {
   listVertices(tenantId: string, options: ListOptions): Page<Vertex> {
     return {
       items: [...this.vertices.values()].filter(
-        (v) => v.tenantId === tenantId && (options.includeDeleted || !v.deletedAt),
+        (v) =>
+          v.tenantId === tenantId &&
+          (options.includeDeleted || !v.deletedAt) &&
+          (!options.type || v.type === options.type) &&
+          (!options.status || v.status === options.status) &&
+          (!options.ids?.length || options.ids.includes(v.id)),
       ),
       nextCursor: null,
     };
@@ -99,7 +104,14 @@ export class MockRepository implements DriftRepository {
   listEdges(tenantId: string, options: ListOptions): Page<Edge> {
     return {
       items: [...this.edges.values()].filter(
-        (e) => e.tenantId === tenantId && (options.includeDeleted || !e.deletedAt),
+        (e) =>
+          e.tenantId === tenantId &&
+          (options.includeDeleted || !e.deletedAt) &&
+          (!options.type || e.type === options.type) &&
+          (!options.status || e.status === options.status) &&
+          (!options.ids?.length || options.ids.includes(e.id)) &&
+          (!options.fromVertexId || e.fromVertexId === options.fromVertexId) &&
+          (!options.toVertexId || e.toVertexId === options.toVertexId),
       ),
       nextCursor: null,
     };

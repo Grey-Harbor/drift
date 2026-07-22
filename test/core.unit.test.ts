@@ -129,3 +129,49 @@ test('core applies declarative retrieval to repository records', () => {
 
   assert.deepEqual(result.rows, [{ type: 'device', count: 2, total: 6 }]);
 });
+
+test('core applies retrieval ID and group limits before returning results', () => {
+  const { service, admin } = setup();
+  const first = service.createVertex(admin, { ...vertexInput, type: 'device' });
+  service.createVertex(admin, { ...vertexInput, type: 'service' });
+
+  const filtered = service.retrieve(admin, {
+    source: 'vertices',
+    filters: { ids: [first.id] },
+    projection: [{ field: 'id' }],
+    includeDeleted: false,
+  });
+  assert.deepEqual(filtered.rows, [{ id: first.id }]);
+
+  const limited = new DriftService(new MockRepository(), {
+    retrieveGroups: 1,
+  });
+  const boot = limited.bootstrap('limited', 'Limited');
+  const principal = limited.authenticate(boot.key.secret);
+  limited.createVertex(principal, { ...vertexInput, type: 'device' });
+  limited.createVertex(principal, { ...vertexInput, type: 'service' });
+  assert.throws(
+    () =>
+      limited.retrieve(principal, {
+        source: 'vertices',
+        projection: [{ field: 'type' }],
+        groupBy: ['type'],
+        includeDeleted: false,
+      }),
+    { code: 'limit_exceeded' },
+  );
+});
+
+test('core rejects retrieval after its execution budget is exhausted', () => {
+  const clockValues = [0, 251];
+  const service = new DriftService(
+    new MockRepository(),
+    { retrieveExecutionMs: 250 },
+    () => clockValues.shift() ?? 251,
+  );
+  const boot = service.bootstrap('timed', 'Timed');
+  const admin = service.authenticate(boot.key.secret);
+  assert.throws(() => service.retrieve(admin, { source: 'vertices', includeDeleted: false }), {
+    code: 'limit_exceeded',
+  });
+});

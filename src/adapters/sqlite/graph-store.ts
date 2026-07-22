@@ -22,6 +22,7 @@ export class SqliteGraphStore {
     if (!options.includeDeleted) where.push('deleted_at IS NULL');
     if (options.type) addFilter(where, parameters, 'type', options.type);
     if (options.status) addFilter(where, parameters, 'status', options.status);
+    if (options.ids?.length) addIdsFilter(where, parameters, options.ids);
     if (table === 'edges') addEdgeFilters(where, parameters, options);
 
     const cursor = decodeCursor(options.cursor);
@@ -100,6 +101,12 @@ function addEdgeFilters(
 ) {
   if (options.fromVertexId) addFilter(where, parameters, 'from_vertex_id', options.fromVertexId);
   if (options.toVertexId) addFilter(where, parameters, 'to_vertex_id', options.toVertexId);
+}
+
+function addIdsFilter(where: string[], parameters: Record<string, unknown>, ids: string[]) {
+  const names = ids.map((_, index) => `id${index}`);
+  where.push(`id IN (${names.map((name) => `@${name}`).join(',')})`);
+  for (const [index, id] of ids.entries()) parameters[names[index]!] = id;
 }
 
 function endpointWhereClause(direction: TraverseInput['direction'], placeholders: string) {

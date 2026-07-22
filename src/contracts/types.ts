@@ -58,6 +58,7 @@ export interface Page<T> {
 export interface ListOptions {
   type?: string;
   status?: string;
+  ids?: string[];
   fromVertexId?: string;
   toVertexId?: string;
   cursor?: string;
@@ -91,6 +92,24 @@ export interface RetrieveResult {
   rows: Array<Record<string, Json>>;
   scanned: number;
 }
+
+export interface DriftLimits {
+  traverseDepth: number;
+  traverseResults: number;
+  retrieveScan: number;
+  retrieveGroups: number;
+  retrieveResults: number;
+  retrieveExecutionMs: number;
+}
+
+export const defaultDriftLimits: DriftLimits = {
+  traverseDepth: 5,
+  traverseResults: 500,
+  retrieveScan: 5000,
+  retrieveGroups: 1000,
+  retrieveResults: 1000,
+  retrieveExecutionMs: 250,
+};
 
 export class DriftError extends Error {
   constructor(

@@ -1,20 +1,40 @@
-import type { Json, RetrieveInput, RetrieveResult } from '../contracts/types.js';
+import {
+  DriftError,
+  type Json,
+  type RetrieveInput,
+  type RetrieveResult,
+} from '../contracts/types.js';
 
 type Row = Record<string, Json>;
 
-export function runRetrieval(records: object[], input: RetrieveInput): RetrieveResult {
-  const projection = input.projection?.length ? input.projection : [{ field: 'id' }];
-  const projected = records.map((record) =>
-    Object.fromEntries(
-      projection.map((item) => [item.as ?? item.field, readField(record, item.field)]),
-    ),
-  ) as Row[];
-  const rows =
-    input.groupBy?.length || input.aggregates?.length ? reduceGroups(projected, input) : projected;
+export interface RetrievalExecutionLimits {
+  maxGroups: number;
+  maxResults: number;
+  assertWithinBudget(): void;
+}
 
+export function runRetrieval(
+  records: object[],
+  input: RetrieveInput,
+  limits: RetrievalExecutionLimits,
+): RetrieveResult {
+  const projection = input.projection?.length ? input.projection : [{ field: 'id' }];
+  const projected = records.map((record) => {
+    limits.assertWithinBudget();
+    return Object.fromEntries(
+      projection.map((item) => [item.as ?? item.field, readField(record, item.field)]),
+    ) as Row;
+  });
+  const rows =
+    input.groupBy?.length || input.aggregates?.length
+      ? reduceGroups(projected, input, limits)
+      : projected;
+
+  limits.assertWithinBudget();
   sortRows(rows, input);
+  limits.assertWithinBudget();
   return {
-    rows: rows.slice(0, Math.min(input.limit ?? 100, 1000)),
+    rows: rows.slice(0, Math.min(input.limit ?? 100, limits.maxResults)),
     scanned: records.length,
   };
 }
@@ -34,13 +54,23 @@ function readField(record: object, path: string): Json {
   return (values[path] as Json | undefined) ?? null;
 }
 
-function reduceGroups(rows: Row[], input: RetrieveInput): Row[] {
+function reduceGroups(rows: Row[], input: RetrieveInput, limits: RetrievalExecutionLimits): Row[] {
   const groups = new Map<string, Row[]>();
   for (const row of rows) {
+    limits.assertWithinBudget();
     const key = JSON.stringify((input.groupBy ?? []).map((field) => row[field]));
-    groups.set(key, [...(groups.get(key) ?? []), row]);
+    const group = groups.get(key);
+    if (group) group.push(row);
+    else {
+      if (groups.size >= limits.maxGroups)
+        throw new DriftError('limit_exceeded', 'Retrieval exceeds server group limit', 422);
+      groups.set(key, [row]);
+    }
   }
-  return [...groups.values()].map((group) => reduceGroup(group, input));
+  return [...groups.values()].map((group) => {
+    limits.assertWithinBudget();
+    return reduceGroup(group, input);
+  });
 }
 
 function reduceGroup(group: Row[], input: RetrieveInput): Row {

@@ -4,6 +4,10 @@ All graph requests use `Authorization: Bearer <key>` and live under `/v1`. The t
 
 Drift publishes its HTTP contract using the [OpenAPI Specification](https://spec.openapis.org/oas/latest.html). The machine-readable OpenAPI document at `GET /v1/openapi.json` is the versioned API-contract artifact for client generation, validation, and compatibility testing.
 
+Every `/v1` route validates its path, query, and body against that contract. Write
+requests reject undeclared fields; identifiers, tenant ownership, versions, timestamps,
+and deletion markers are always managed by Drift.
+
 ## Routes
 
 | Resource           | Operations                                                                             |
@@ -69,7 +73,7 @@ Normal reads always exclude soft-deleted records. Only an admin key may set `inc
 
 ## Declarative retrieval
 
-`POST /v1/retrieve` is a synchronous alternative to lists and traversal. It reads either `vertices` or `edges`, then projects, groups, aggregates, sorts, and limits bounded results.
+`POST /v1/retrieve` is a synchronous alternative to lists and traversal. It reads either `vertices` or `edges`, first filters by `type`, `status`, or explicit `ids`, then projects, groups, aggregates, sorts, and limits bounded results. The server caps a request at 5,000 scanned records, 1,000 groups, 1,000 results, and a cooperative 250 ms budget.
 
 ```json
 {

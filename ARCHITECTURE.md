@@ -17,7 +17,7 @@ flowchart LR
   Port --> SQLite["SQLite adapter and migrations"]
 ```
 
-HTTP handlers validate transport input, authenticate a Bearer key, and call `DriftService`. The service enforces tenancy, scopes, versions, graph integrity, deletion behavior, traversal limits, and retrieval limits. Core modules also execute traversal and declarative retrieval algorithms. The SQLite adapter only maps records and executes repository queries, including the narrow connected-edge lookup required by core traversal.
+HTTP handlers validate strict transport input, authenticate a Bearer key, and call `DriftService`. The service enforces tenancy, scopes, versions, graph integrity, deletion behavior, traversal limits, and retrieval limits. Core modules also execute traversal and declarative retrieval algorithms. The SQLite adapter only maps records and executes repository queries, including the narrow connected-edge lookup required by core traversal.
 
 This separation is the portability seam: a Postgres or another storage adapter may replace SQLite only by preserving the `DriftRepository` behavior and its contract tests. It must not change core service rules or public API behavior.
 
@@ -104,9 +104,9 @@ All PATCH and DELETE requests include the current integer `version`. A stale, mi
 
 Traversal is intentionally constrained: a caller provides a start vertex, direction (`in`, `out`, or `both`), optional edge and returned-vertex type filters, maximum depth, and result limit. Server limits are authoritative.
 
-Retrieval is a synchronous, declarative alternative to lists and traversal. It can scan tenant vertices or edges, apply first-class filters, project fields (including explicit `data.*` or `metadata.*` paths), group, aggregate, sort, and limit results. It cannot execute caller code, join sources, traverse within a pipeline, filter/group by arbitrary JSON paths, persist outputs, or create jobs.
+Retrieval is a synchronous, declarative alternative to lists and traversal. It can scan tenant vertices or edges, apply first-class type, status, and ID filters, project fields (including explicit `data.*` or `metadata.*` paths), group, aggregate, sort, and limit results. It cannot execute caller code, join sources, traverse within a pipeline, filter/group by arbitrary JSON paths, persist outputs, or create jobs.
 
-The retrieval pipeline is `source → filter → projection → group → aggregate → sort/limit → response`. It is intentionally ETL/MapReduce-shaped without becoming executable MapReduce: the service maps persisted records to projected rows and reduces groups with standard operators, but it never accepts functions, writes derived records, or schedules work. See [the retrieval explanation](./docs/explanation/retrieval.md) for the complete process and operator semantics.
+The retrieval pipeline is `source → filter → projection → group → aggregate → sort/limit → response`. It is intentionally ETL/MapReduce-shaped without becoming executable MapReduce: the service maps persisted records to projected rows and reduces groups with standard operators, but it never accepts functions, writes derived records, or schedules work. Server defaults cap traversal at depth `5` and `500` results; retrieval at `5,000` scanned records, `1,000` groups, `1,000` rows, and a cooperative `250 ms` execution budget. See [the retrieval explanation](./docs/explanation/retrieval.md) for the complete process and operator semantics.
 
 ## Public contract and errors
 

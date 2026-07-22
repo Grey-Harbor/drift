@@ -1,6 +1,8 @@
 import { v7 as uuidv7 } from 'uuid';
 import {
   DriftError,
+  defaultDriftLimits,
+  type DriftLimits,
   type Edge,
   type ListOptions,
   type RetrieveInput,
@@ -29,10 +31,15 @@ const active = (v: Vertex | null) => {
 };
 
 export class DriftService {
+  private readonly limits: DriftLimits;
+
   constructor(
     private readonly repo: DriftRepository,
-    private readonly limits = { traverseDepth: 5, traverseResults: 500, retrieveScan: 5000 },
-  ) {}
+    limits: Partial<DriftLimits> = {},
+    private readonly monotonicNow = () => performance.now(),
+  ) {
+    this.limits = { ...defaultDriftLimits, ...limits };
+  }
   bootstrap(slug: string, name: string, label = 'bootstrap admin') {
     if (this.repo.findTenantBySlug(slug))
       throw new DriftError('conflict', 'Tenant slug already exists', 409);
@@ -178,8 +185,13 @@ export class DriftService {
   retrieve(p: Principal, input: RetrieveInput) {
     requireScope(p, 'read');
     if (input.includeDeleted) requireAdmin(p);
-    if ((input.limit ?? 100) > 1000)
+    if ((input.limit ?? 100) > this.limits.retrieveResults)
       throw new DriftError('limit_exceeded', 'Requested result limit exceeds server limit', 422);
+    const startedAt = this.monotonicNow();
+    const assertWithinBudget = () => {
+      if (this.monotonicNow() - startedAt > this.limits.retrieveExecutionMs)
+        throw new DriftError('limit_exceeded', 'Retrieval exceeds server execution budget', 422);
+    };
     const options: ListOptions = {
       ...input.filters,
       limit: this.limits.retrieveScan,
@@ -189,6 +201,11 @@ export class DriftService {
       input.source === 'vertices'
         ? this.repo.listVertices(p.tenantId, options).items
         : this.repo.listEdges(p.tenantId, options).items;
-    return runRetrieval(records, input);
+    assertWithinBudget();
+    return runRetrieval(records, input, {
+      maxGroups: this.limits.retrieveGroups,
+      maxResults: this.limits.retrieveResults,
+      assertWithinBudget,
+    });
   }
 }
