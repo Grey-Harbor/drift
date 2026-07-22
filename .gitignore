@@ -4,3 +4,6 @@ data/
 *.sqlite
 *.sqlite-*
 .env
+
+# Local planning reference; not part of the public project.
+PLAN.md

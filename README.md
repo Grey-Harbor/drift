@@ -12,7 +12,6 @@ It gives client applications a calm, stable path to store things, connect them, 
 - [API reference](./docs/reference/api.md) — routes, request rules, scopes, and errors.
 - [Release guide](./docs/how-to/release.md) — the verified GHCR publishing path.
 - [Architecture](./ARCHITECTURE.md) — the boundary and portability decisions behind the service.
-- [Project plan](./PLAN.md) — the original MVP intent, completed phases, and remaining delivery work.
 
 ## Run the public image
 

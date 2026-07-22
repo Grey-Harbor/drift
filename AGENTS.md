@@ -5,7 +5,7 @@
 - Use Conventional Commits: `<type>(<scope>): <description>`, imperative and under 72 characters.
 - Keep one logical change per commit. Do not prefix branches with an agent name.
 - Preserve user changes and avoid destructive git commands unless explicitly requested.
-- Keep `PLAN.md`, `ARCHITECTURE.md`, and user-facing docs aligned with behavioral changes.
+- Keep `ARCHITECTURE.md` and user-facing docs aligned with behavioral changes.
 - Format all edited TypeScript, JSON, YAML, and Markdown with Prettier before handoff; use the repository's `.prettierrc.json` and do not leave compressed one-line implementation code.
 - Prefer focused modules with one clear responsibility. Extract cohesive concerns—such as authentication, request parsing, schemas, persistence mapping, or query transformation—before a file becomes a mixed-responsibility implementation. Keep public orchestration types and entrypoints small, and preserve behavior with focused tests when moving code.
 
