@@ -1,0 +1,36 @@
+{
+  "name": "@greyharbor/drift-site",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "site:build": "npm run build",
+    "start": "next start",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "site:check": "npm run check",
+    "preview": "node scripts/preview.mjs",
+    "site:preview": "npm run preview"
+  },
+  "dependencies": {
+    "fumadocs-core": "15.8.5",
+    "fumadocs-ui": "15.8.5",
+    "github-slugger": "2.0.0",
+    "hast-util-to-jsx-runtime": "2.3.6",
+    "mdast-util-to-string": "4.0.0",
+    "next": "15.5.19",
+    "react": "19.2.7",
+    "react-dom": "19.2.7",
+    "remark-gfm": "4.0.1",
+    "remark-parse": "11.0.0",
+    "remark-rehype": "11.1.2",
+    "unified": "11.0.5",
+    "unist-util-visit": "5.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "25.9.4",
+    "@types/react": "19.2.17",
+    "@types/react-dom": "19.2.3",
+    "typescript": "6.0.3"
+  }
+}

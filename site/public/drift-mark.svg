@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" fill="none">
+  <title>Drift</title>
+  <defs>
+    <linearGradient id="current" x1="17" y1="20" x2="78" y2="76" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#8bbbd4" />
+      <stop offset="1" stop-color="#d5a86c" />
+    </linearGradient>
+  </defs>
+  <rect width="96" height="96" rx="27" fill="#0a1d29" />
+  <path d="M17 56c9-16 17-23 29-23 14 0 18 15 32 15" stroke="url(#current)" stroke-width="5" stroke-linecap="round" />
+  <path d="M18 69c12 0 16-8 25-8 11 0 15 10 30 10 4 0 7-1 10-3" stroke="#8bbbd4" stroke-opacity=".72" stroke-width="3" stroke-linecap="round" />
+  <circle cx="18" cy="56" r="7" fill="#0a1d29" stroke="#8bbbd4" stroke-width="4" />
+  <circle cx="46" cy="33" r="7" fill="#0a1d29" stroke="#d5a86c" stroke-width="4" />
+  <circle cx="78" cy="48" r="7" fill="#0a1d29" stroke="#8bbbd4" stroke-width="4" />
+  <circle cx="43" cy="61" r="5" fill="#d5a86c" />
+</svg>
