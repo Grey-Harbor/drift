@@ -4,6 +4,8 @@
 
 - Use Conventional Commits: `<type>(<scope>): <description>`, imperative and under 72 characters.
 - Keep one logical change per commit. Do not prefix branches with an agent name.
+- Create each change on a focused branch; do not make new commits directly on `main`.
+- Land changes through a pull request into `main`. Use the repository PR template and wait for required verification to pass before merging.
 - Preserve user changes and avoid destructive git commands unless explicitly requested.
 - Keep `ARCHITECTURE.md` and user-facing docs aligned with behavioral changes.
 - Format all edited TypeScript, JSON, YAML, and Markdown with Prettier before handoff; use the repository's `.prettierrc.json` and do not leave compressed one-line implementation code.
