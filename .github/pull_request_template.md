@@ -16,7 +16,6 @@
 - [ ] No user-facing documentation update needed
 - [ ] `README.md` updated for landing-page changes
 - [ ] `ARCHITECTURE.md` updated for committed design changes
-- [ ] `PLAN.md` updated for phase or delivery-status changes
 - [ ] Relevant page in `docs/` updated for behavior, defaults, or usage changes
 
 ## Notes
