@@ -5,16 +5,11 @@ images only; it does not publish an npm package or client SDK in this release.
 
 ## Prepare the release
 
-Confirm the version is `0.1.0` in `package.json`, add the final release notes to
-the matching section of `CHANGELOG.md`, and run the local verification suite:
-
-```bash
-npm ci
-npm run format:check
-npm run check
-npm test
-npm run build
-```
+Confirm the version is `0.1.0` in `package.json` and add the final release notes
+to the matching section of `CHANGELOG.md`. Then complete the service verification
+steps in [build Drift from source](../tutorial/building-from-source.md). That
+tutorial is the source of truth for local install, build, CLI, site, and Pages
+verification commands.
 
 Push the reviewed `main` branch and wait for the **Verify** workflow to pass. Do
 not create a release tag from an unverified commit.

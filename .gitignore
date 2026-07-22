@@ -1,6 +1,9 @@
 node_modules/
 dist/
 data/
+site/.next/
+site/out/
+site/tsconfig.tsbuildinfo
 *.sqlite
 *.sqlite-*
 .env
