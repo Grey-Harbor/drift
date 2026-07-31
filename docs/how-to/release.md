@@ -1,7 +1,9 @@
 # Release a Drift Docker image
 
-This guide describes the controlled v0.1.0 release path. Drift publishes Docker
-images only; it does not publish an npm package or client SDK in this release.
+Use this guide when publishing the reviewed v0.1.0 Docker image to GHCR. The
+process ties an immutable source tag to verified multi-architecture artifacts and
+provenance. Drift publishes Docker images only; it does not publish an npm package
+or client SDK in this release.
 
 ## Prepare the release
 
@@ -13,6 +15,11 @@ verification commands.
 
 Push the reviewed `main` branch and wait for the **Verify** workflow to pass. Do
 not create a release tag from an unverified commit.
+
+Release readiness, version selection, changelog meaning, compatibility, and
+rollout timing require maintainer approval. Automation may compare explicit
+version strings, run checks, build from the approved tag, and publish configured
+artifacts; it must not infer that passing checks makes a release appropriate.
 
 ## Publish the tag
 
@@ -56,3 +63,25 @@ docker buildx imagetools inspect ghcr.io/grey-harbor/drift:v0.1.0
 
 The inspection must list both Linux platforms. Record the release digest in
 deployment configuration when an immutable production pin is required.
+
+## Roll out and observe
+
+Roll out the immutable digest to a non-production environment first. Verify the
+container health status, `/health`, startup logs, tenant authentication, and
+representative reads and writes against an operator-approved dataset. Retain the
+prior digest and take a verified database backup before updating a deployment.
+
+GitHub Actions logs, the image manifest, provenance attestation, and GitHub release
+are the publication record. Runtime health, capacity, request failures, and backup
+freshness remain the deployment operator's responsibility.
+
+## Roll back a deployment
+
+Stop writes, redeploy the previously recorded digest, and restore the pre-rollout
+database only if the release changed persisted state incompatibly. Decide whether
+to restore data from the release notes and an approved migration plan; neither the
+container health check nor automation can infer database compatibility or an
+acceptable recovery point.
+
+Do not move or delete the published Git tag. If an image itself must be superseded,
+publish a new reviewed version and update consumers deliberately.

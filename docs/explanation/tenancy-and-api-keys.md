@@ -1,6 +1,6 @@
 # Tenants, bootstrap, and API keys
 
-Drift uses API keys to establish the tenant boundary for every graph request. Bootstrap is the operator-only action that creates the first boundary and the first credential that can manage it.
+Use this explanation when designing tenant provisioning or credential handling around Drift. API keys establish the tenant boundary for every graph request, while bootstrap is the operator-only action that creates the first boundary and the first credential that can manage it.
 
 ## The relationship
 

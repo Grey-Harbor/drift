@@ -1,6 +1,6 @@
 # Tutorials
 
-Tutorials teach Drift through complete, working paths. Start with a small graph, then learn the operator workflow that establishes its tenant boundary.
+Use a tutorial when you are learning Drift and want a complete, working path with a known outcome. Start with a small graph, then learn the operator workflow that establishes its tenant boundary.
 
 - [Model a small commerce graph](./getting-started.md) — bootstrap a tenant, create vertices and edges, traverse relationships, and retrieve an aggregate.
 - [Administer tenants and API keys](./administering-tenants-and-keys.md) — establish isolated tenants and manage their scoped service credentials.

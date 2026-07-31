@@ -1,5 +1,7 @@
 # Why retrieval is declarative
 
+Use this explanation when deciding whether a client should list records, traverse relationships, or request a declarative aggregate. The distinction matters because retrieval is bounded and synchronous rather than a general query or job system.
+
 Drift has three read methods with different jobs:
 
 - lists retrieve resource collections with a small set of indexed filters;
@@ -39,7 +41,19 @@ This is the extract part of the operation: select a bounded tenant-owned set of 
 `projection` selects the fields each input record contributes to the pipeline. A projection entry has a source `field` and optional output name `as`.
 
 ```json
-[{ "field": "type" }, { "field": "title", "as": "label" }, { "field": "data.cost", "as": "cost" }]
+[
+  {
+    "field": "type"
+  },
+  {
+    "field": "title",
+    "as": "label"
+  },
+  {
+    "field": "data.cost",
+    "as": "cost"
+  }
+]
 ```
 
 Top-level record fields may be projected. Explicit `data.*` and `metadata.*` paths may also be projected from flexible JSON. JSON paths are deliberately projection-only: they cannot filter, group, or join records in the MVP.
