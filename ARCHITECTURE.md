@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Drift is a tenant-safe persistence service for connected application data. It makes a graph-shaped domain model boring in the best way: create a thing, connect it to another thing, retrieve it predictably, and keep storage replaceable.
+Use this document when evaluating a change to Drift's system boundaries or durable design commitments. Drift is a tenant-safe persistence service for connected application data. It makes a graph-shaped domain model boring in the best way: create a thing, connect it to another thing, retrieve it predictably, and keep storage replaceable.
 
 Drift is not a graph database protocol, a hosted SaaS, a workflow engine, an identity provider, or an arbitrary code execution environment.
 
@@ -23,7 +23,7 @@ This separation is the portability seam: a Postgres or another storage adapter m
 
 Drift currently uses direct SQLite queries because they keep the adapter's storage work explicit. An ORM or query builder is a future adapter implementation decision, not an architectural boundary: adopting one must not place traversal, retrieval, authorization, or domain rules back into storage code.
 
-See [implementing a storage adapter](./docs/explanation/adapters.md) for the repository contract, required behavior, and compatibility checklist for a future adapter.
+See [why Drift uses storage adapters](./docs/explanation/adapters.md) for the boundary and [implement a storage adapter](./docs/how-to/storage-adapter.md) for the task sequence, compatibility checks, and rollout guidance.
 
 ## Identity and tenant boundary
 

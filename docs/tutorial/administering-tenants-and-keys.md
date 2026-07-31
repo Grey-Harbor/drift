@@ -1,6 +1,6 @@
 # Tutorial: administer tenants and API keys
 
-This tutorial teaches the first-release administration model. You will create two isolated tenants, use an admin key to issue a narrower service key, rotate it, and revoke a disposable key.
+Use this tutorial when you need to learn Drift's administration model before managing real credentials. You will create two isolated tenants, use an admin key to issue a narrower service key, rotate it, and revoke a disposable key.
 
 Drift v1 does not expose a tenant-management HTTP API. Creating a tenant is an operator action through `bootstrap`; managing API keys inside an existing tenant is an admin-key API action.
 
@@ -87,7 +87,10 @@ To revoke a key that is no longer needed, use its ID. This example creates a sho
 TEMPORARY_KEY_ID="$(curl -fsS -X POST "$DRIFT_URL/v1/admin/keys" \
   -H "Authorization: Bearer $ACME_ADMIN_KEY" \
   -H 'content-type: application/json' \
-  -d '{ "label": "temporary-report", "scopes": ["read"] }' | jq -r '.apiKey.id')"
+  -d '{
+    "label": "temporary-report",
+    "scopes": ["read"]
+  }' | jq -r '.apiKey.id')"
 
 curl -fsS -X DELETE "$DRIFT_URL/v1/admin/keys/$TEMPORARY_KEY_ID" \
   -H "Authorization: Bearer $ACME_ADMIN_KEY"
@@ -101,5 +104,20 @@ Revocation is immediate and does not affect graph records. An already revoked ke
 - An API key always determines the tenant for its request.
 - Bootstrap creates a new tenant; admin endpoints manage keys within an existing one.
 - Admin keys should be kept for administrative work; client services should receive the narrowest scopes they need.
+
+## Clean up the tutorial environment
+
+The tutorial persists both tenants, their keys, and key lifecycle metadata in the
+configured Drift database. Drift v1 has no tenant-deletion endpoint. If you used a
+dedicated disposable local database, stop Drift and remove it only after confirming
+that it contains no data you need:
+
+```bash
+rm -rf data
+```
+
+The default database is `./data/drift.sqlite`. Do not run this reset against a
+shared or production checkout. Selecting whether a database is disposable is an
+operator decision and must not be inferred by automation.
 
 Continue with the [getting-started graph tutorial](./getting-started.md) to create tenant-scoped vertices and edges, or see [tenants, bootstrap, and API keys](../explanation/tenancy-and-api-keys.md) for the model behind these commands.

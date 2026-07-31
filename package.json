@@ -9,8 +9,9 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "ci": "npm run format:check && npm run check && npm test && npm run build",
+    "ci": "npm run format:check && npm run docs:check && npm run check && npm test && npm run build",
     "dev": "tsx watch src/server.ts",
+    "docs:check": "node scripts/check-docs.mjs",
     "start": "node dist/server.js",
     "cli": "tsx src/cli.ts",
     "site:check": "npm --prefix site run check",

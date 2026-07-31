@@ -1,8 +1,6 @@
 # How-to: contribute changes
 
-This guide covers the normal contributor workflow for Drift.
-
-Use it when you want to make a code or documentation change and move it through a
+Use this guide when you want to make a code or documentation change and move it through a
 branch and pull request cleanly. For the project-wide rules behind this workflow,
 read [AGENTS.md](../../AGENTS.md).
 
@@ -19,6 +17,13 @@ Install the dependencies before making changes:
 
 ```bash
 npm install
+```
+
+If you will change documentation or the site, install its locked dependencies as
+well:
+
+```bash
+npm --prefix site ci
 ```
 
 ## Start on a branch
@@ -47,6 +52,19 @@ npm run build
 For changes that affect the Docker image or startup behavior, also build and run
 the image locally. The [Docker guide](./docker.md) explains the expected setup,
 bootstrap, persistence, and cleanup behavior.
+
+For every documentation change, also run the documentation-specific checks:
+
+```bash
+npm run docs:check
+npm run site:check
+npm run site:build
+```
+
+These commands validate fenced JSON and internal links, type-check the Fumadocs
+site, and build the static export. Review the page against
+[the documentation checklist](../STYLE.md#documentation-review-checklist) before
+committing.
 
 ## Commit the work
 
@@ -99,7 +117,13 @@ update the documentation with it:
 Drift uses Diátaxis: add tutorials for learning by doing, how-to guides for a
 specific task, reference for precise facts, and explanation for design context.
 Keep the root README short, link to an existing home for related information, and
-write in Drift’s calm, practical voice.
+write in Drift’s calm, practical voice. The canonical examples and complete
+quality rules are in [the documentation style guide](../STYLE.md).
+
+Formatting, link correction, and explicitly specified identifier or version
+replacement are safe to automate. Business semantics, release readiness,
+credential scopes, operational risk, and whether a behavior is a public guarantee
+require maintainer input; neither scripts nor AI assistants should infer them.
 
 ## Things to avoid
 

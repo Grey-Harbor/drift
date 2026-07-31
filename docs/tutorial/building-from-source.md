@@ -1,8 +1,6 @@
 # Build Drift from source
 
-This tutorial walks through a full local build of Drift from a fresh checkout.
-
-Use it when you want to build the service, run its verification suite, exercise
+Use this tutorial when you want to build Drift from a fresh checkout, run its verification suite, exercise
 the source CLI, and preview the documentation site as GitHub Pages will serve it.
 
 If you want to model a first graph after the build is working, continue with
@@ -92,11 +90,13 @@ Run the same site checks that the GitHub Pages workflow runs after its
 dependency-install step:
 
 ```bash
+npm run docs:check
 npm run site:check
 npm run site:build
 ```
 
-The commands produce `site/out/`, including the landing page, rendered Diátaxis
+The first command validates fenced JSON and internal Markdown links. The site
+type check validates the Fumadocs application. The build produces `site/out/`, including the landing page, rendered Diátaxis
 documentation, crawler files, and site assets. The same `site:check` and
 `site:build` commands also work after changing into `site/`; `check` and `build`
 remain their shorter local aliases.

@@ -1,6 +1,6 @@
 # Getting started: model a small commerce graph
 
-This tutorial creates an Acme Inc. tenant, starts Drift, stores a product and an invoice, connects them, traverses the relationship, and calculates a small aggregate. The invoice records an Anvil purchased by Wile E. Coyote. It uses `curl` so the API remains visible.
+Use this tutorial when you want to learn Drift by building and querying a complete graph. You will create an Acme Inc. tenant, start Drift, store a product and an invoice, connect them, traverse the relationship, and calculate a small aggregate. The invoice records an Anvil purchased by Wile E. Coyote. The tutorial uses `curl` so the API remains visible.
 
 ## 1. Install, bootstrap, and run
 
@@ -37,8 +37,13 @@ PRODUCT_ID="$(curl -fsS -X POST "$DRIFT_URL/v1/vertices" \
     "type": "product",
     "slug": "anvil",
     "title": "Acme Anvil",
-    "data": { "sku": "ACME-ANVIL-001", "unitPrice": 99.95 },
-    "metadata": { "source": "catalog" }
+    "data": {
+      "sku": "ACME-ANVIL-001",
+      "unitPrice": 99.95
+    },
+    "metadata": {
+      "source": "catalog"
+    }
   }' | jq -r '.id')"
 
 echo "$PRODUCT_ID"
@@ -65,7 +70,9 @@ INVOICE_ID="$(curl -fsS -X POST "$DRIFT_URL/v1/vertices" \
       "customer": "Wile E. Coyote",
       "total": 99.95
     },
-    "metadata": { "source": "sales" }
+    "metadata": {
+      "source": "sales"
+    }
   }' | jq -r '.id')"
 
 echo "$INVOICE_ID"
@@ -89,7 +96,10 @@ curl -fsS -X POST "$DRIFT_URL/v1/edges" \
     \"fromVertexId\": \"$PRODUCT_ID\",
     \"toVertexId\": \"$INVOICE_ID\",
     \"type\": \"appears_on\",
-    \"data\": { \"quantity\": 1, \"unitPrice\": 99.95 }
+    \"data\": {
+      \"quantity\": 1,
+      \"unitPrice\": 99.95
+    }
   }"
 ```
 
@@ -121,10 +131,24 @@ curl -sS -X POST "$DRIFT_URL/v1/retrieve" \
   -H 'content-type: application/json' \
   -d '{
     "source": "vertices",
-    "projection": [{ "field": "type" }],
+    "projection": [
+      {
+        "field": "type"
+      }
+    ],
     "groupBy": ["type"],
-    "aggregates": [{ "op": "count", "as": "count" }],
-    "sort": [{ "field": "type", "direction": "asc" }],
+    "aggregates": [
+      {
+        "op": "count",
+        "as": "count"
+      }
+    ],
+    "sort": [
+      {
+        "field": "type",
+        "direction": "asc"
+      }
+    ],
     "includeDeleted": false
   }'
 ```
@@ -141,12 +165,16 @@ To remove the graph from ordinary reads, soft-delete the product and invoice ver
 curl -fsS -X DELETE "$DRIFT_URL/v1/vertices/$PRODUCT_ID" \
   -H "Authorization: Bearer $DRIFT_KEY" \
   -H 'content-type: application/json' \
-  -d '{ "version": 1 }'
+  -d '{
+    "version": 1
+  }'
 
 curl -fsS -X DELETE "$DRIFT_URL/v1/vertices/$INVOICE_ID" \
   -H "Authorization: Bearer $DRIFT_KEY" \
   -H 'content-type: application/json' \
-  -d '{ "version": 1 }'
+  -d '{
+    "version": 1
+  }'
 ```
 
 Soft-deleted records remain available to an admin key with `includeDeleted=true` and may be restored. If this is a disposable local installation and you want to remove the tenant, API key, and all tutorial records entirely, stop Drift and delete the local database file:

@@ -1,6 +1,6 @@
-# Implementing a storage adapter
+# Why Drift uses storage adapters
 
-Drift is designed so that storage can change without changing graph behavior. A storage adapter is the implementation of the `DriftRepository` interface in `src/interfaces/repository.ts`. SQLite is the first adapter; a future Postgres adapter, for example, implements the same port and must preserve its observable behavior.
+Use this explanation when deciding where persistence behavior belongs or evaluating a new storage technology. Drift is designed so storage can change without changing graph behavior. A storage adapter implements the `DriftRepository` interface in `src/interfaces/repository.ts`; SQLite is the first adapter, while a future Postgres adapter must preserve the same observable contract.
 
 ## The boundary
 
@@ -31,7 +31,7 @@ The port has two intentional shapes:
 
 List methods must preserve the documented filters, deterministic ID ordering, opaque cursor behavior, page boundaries, and deleted-record handling. Update and delete methods must honor the supplied version atomically, returning `null` when the expected active record/version does not match. The service translates that outcome into the public conflict response.
 
-## Adapter-internal structure
+## Adapter-specific choices
 
 An adapter may use direct SQL, a query builder, or an ORM. That is an implementation decision inside the adapter, not a change to the core boundary.
 
@@ -44,28 +44,6 @@ The SQLite adapter separates its own concerns:
 
 A new adapter should use an equally clear internal structure. Do not expose its ORM models, SQL query objects, connection types, or migration APIs to `src/core` or `src/api`.
 
-## Recommended implementation sequence
+Direct SQL, an ORM, a query builder, connection pooling, physical JSON representation, migration tools, and index design are adapter-specific. They may vary as long as the repository contract and HTTP-visible behavior remain unchanged. That freedom is useful only inside the boundary; it does not authorize an adapter to weaken tenant isolation or reinterpret a domain value.
 
-1. Read `DriftRepository`, `ARCHITECTURE.md`, and the SQLite adapter as the behavioral reference.
-2. Add the adapter under `src/adapters/<storage>/` with its connection lifecycle, migrations, mappers, and repository implementation.
-3. Implement tenant/API-key operations first so authentication works through the new adapter.
-4. Implement vertex and edge reads/writes, including same-tenant lookup and atomic version-aware updates.
-5. Implement filtered lists and `findConnectedEdges` as efficient storage queries with the appropriate tenant and active-record indexes.
-6. Run the shared repository behavior tests against the new adapter. Add storage-specific integration tests for migrations, transactions, JSON representation, and indexes.
-7. Verify the HTTP contract suite without changing core or route code.
-
-## Compatibility checklist
-
-Before an adapter is considered compatible, verify all of the following:
-
-- tenant isolation applies to every read and write;
-- API-key secrets remain hashed and are never returned from a lookup;
-- JSON payloads round-trip as valid Drift `Json` values;
-- IDs, timestamps, statuses, nullability, and versions map without loss;
-- updates, soft deletion, and restore perform atomically with version checks;
-- deleting a vertex and its active incident edges occurs in one transaction;
-- active graph reads hide deleted records unless the caller explicitly requested deleted data;
-- lists paginate deterministically and traversal's edge lookup respects its filters; and
-- no adapter-specific type is imported by the core, contracts, or API layers.
-
-When a second adapter exists, promote the existing SQLite integration scenarios into a reusable repository conformance suite so both adapters prove the same behavior.
+For the task sequence, verification requirements, rollout, and rollback guidance, use [implement a storage adapter](../how-to/storage-adapter.md).

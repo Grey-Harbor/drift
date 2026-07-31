@@ -40,3 +40,14 @@
 - Use Diátaxis under `docs/`: tutorial, how-to, reference, explanation.
 - Keep the root README a short landing page.
 - Write in the Grey Harbor voice: calm, practical, independent, and technically confident.
+- Make documentation instructional first while preserving precise technical definitions.
+- Begin each page by telling readers when and why to use it, and prefer complete, copyable examples over fragments.
+- Format JSON for human review. Show JSONL pretty-printed in documentation and state that its stored representation is one object per physical line.
+- Define inputs, outputs, defaults, invariants, failure behavior, ownership, and operational limitations explicitly.
+- Label guaranteed behavior, recommendations, and adapter-specific behavior so readers do not confuse them.
+- Include rollout, rollback, security, persistence, and observability guidance when operationally relevant.
+- Write automation guidance for human and AI adopters: identify safe mechanical transformations and decisions that require human business or operational judgment.
+- Cross-reference canonical contracts instead of duplicating them.
+- Preserve the tone and depth of the existing `docs/` tree.
+- Before committing documentation, validate fenced JSON, internal links, the Fumadocs type check, and the static site export.
+- Use `docs/STYLE.md` for examples and the documentation review checklist.
