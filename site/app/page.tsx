@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
+import { SiteFooter } from '@/components/site-footer';
 import { buildPageMetadata, siteDescription, siteName, siteUrl, socialCard } from '@/lib/seo';
 
 export const metadata: Metadata = buildPageMetadata({
@@ -187,18 +188,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        <footer className="site-footer">
-          <div className="footer-links" aria-label="Related links">
-            <Link href="/docs/how-to/docker">Run Drift with Docker</Link>
-            <a href="https://github.com/Grey-Harbor/drift" target="_blank" rel="noreferrer">
-              GitHub repository
-            </a>
-            <a href="https://www.greyharborsoftware.com" target="_blank" rel="noreferrer">
-              Grey Harbor Software
-            </a>
-          </div>
-          <p>&copy; {new Date().getFullYear()} Grey Harbor Software. All rights reserved.</p>
-        </footer>
+        <SiteFooter />
       </main>
     </>
   );
