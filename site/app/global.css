@@ -461,9 +461,16 @@ svg {
 }
 
 .docs-article pre {
+  padding: 1rem 1.25rem;
+  overflow-x: auto;
   background: rgba(3, 10, 15, 0.78);
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
+}
+
+.docs-article pre code {
+  display: block;
+  min-width: max-content;
 }
 
 .docs-article blockquote {

@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { PageArticle, PageRoot } from 'fumadocs-ui/layouts/docs/page';
 import { DocsBody, DocsDescription, DocsTitle } from 'fumadocs-ui/page';
 
+import { SiteFooter } from '@/components/site-footer';
 import { getDocDescription, getDocPage, getDocParams, routeFromSlug } from '@/lib/docs';
 import { titleForDoc } from '@/lib/format';
 import { buildPageMetadata } from '@/lib/seo';
@@ -65,16 +66,19 @@ export default async function DocsPageRoute({ params }: DocsPageProps) {
   const description = getDocDescription(slug);
 
   return (
-    <main className="docs-shell" id="main">
-      <div className="docs-frame">
-        <PageRoot toc={page.toc.length > 0 ? { toc: page.toc } : false} className="docs-root">
-          <PageArticle className="docs-article">
-            <DocsTitle>{title}</DocsTitle>
-            {description ? <DocsDescription>{description}</DocsDescription> : null}
-            <DocsBody>{page.body}</DocsBody>
-          </PageArticle>
-        </PageRoot>
-      </div>
-    </main>
+    <>
+      <main className="docs-shell" id="main">
+        <div className="docs-frame">
+          <PageRoot toc={page.toc.length > 0 ? { toc: page.toc } : false} className="docs-root">
+            <PageArticle className="docs-article">
+              <DocsTitle>{title}</DocsTitle>
+              {description ? <DocsDescription>{description}</DocsDescription> : null}
+              <DocsBody>{page.body}</DocsBody>
+            </PageArticle>
+          </PageRoot>
+        </div>
+      </main>
+      <SiteFooter />
+    </>
   );
 }
