@@ -16,7 +16,7 @@ export const siteKeywords = [
 ] as const;
 
 export const socialCard = {
-  url: '/brand/social-card.svg',
+  url: '/brand/social-card.png',
   width: 1731,
   height: 909,
   alt: 'Drift graph persistence',

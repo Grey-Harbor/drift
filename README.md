@@ -1,4 +1,4 @@
-![Drift](https://drift.greyharborsoftware.com/brand/social-card.svg)
+![Drift](https://drift.greyharborsoftware.com/brand/social-card.png)
 
 # Drift
 
