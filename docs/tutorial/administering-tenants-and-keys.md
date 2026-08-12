@@ -2,7 +2,7 @@
 
 Use this tutorial when you need to learn Drift's administration model before managing real credentials. You will create two isolated tenants, use an admin key to issue a narrower service key, rotate it, and revoke a disposable key.
 
-Drift v1 does not expose a tenant-management HTTP API. Creating a tenant is an operator action through `bootstrap`; managing API keys inside an existing tenant is an admin-key API action.
+Drift v1 does not expose a tenant-management HTTP API. Creating a tenant is an operator action through Drift's bundled `bootstrap` command; managing API keys inside an existing tenant is an admin-key API action. This tutorial keeps that HTTP contract visible with `curl` and JSON. The companion [Drift CLI](https://drift-cli.greyharborsoftware.com/docs/) is an alternative for operators who prefer commands over constructing those requests directly.
 
 ## Before you begin
 
@@ -104,6 +104,26 @@ Revocation is immediate and does not affect graph records. An already revoked ke
 - An API key always determines the tenant for its request.
 - Bootstrap creates a new tenant; admin endpoints manage keys within an existing one.
 - Admin keys should be kept for administrative work; client services should receive the narrowest scopes they need.
+
+## Use Drift CLI as an alternative
+
+The companion CLI wraps the same key-administration routes used above. After [building and configuring `drift-cli`](https://drift-cli.greyharborsoftware.com/docs/tutorial/), set its endpoint and existing tenant admin key:
+
+```bash
+export DRIFT_ENDPOINT="$DRIFT_URL"
+export DRIFT_API_KEY="$ACME_ADMIN_KEY"
+```
+
+The equivalent administration commands are:
+
+```bash
+drift key list
+drift key create --label inventory-service --scope read --scope write
+drift key rotate <key-id> --label inventory-service --scope read --scope write --yes
+drift key revoke <key-id> --yes
+```
+
+The CLI cannot create, select, or enumerate tenants; the supplied admin key determines the tenant. Creation and rotation still return a raw secret once, while rotation and revocation remain immediate. See the CLI's [command reference](https://drift-cli.greyharborsoftware.com/docs/reference/commands/) for profiles, JSON output for automation, credential input, and recovery commands.
 
 ## Clean up the tutorial environment
 

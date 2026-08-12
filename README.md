@@ -10,6 +10,7 @@ It gives client applications a calm, stable path to store things, connect them, 
 
 - [Getting started tutorial](./docs/tutorial/getting-started.md) — bootstrap a tenant, create a graph, traverse it, and run an aggregate.
 - [Tenant and key administration tutorial](./docs/tutorial/administering-tenants-and-keys.md) — create isolated tenants and manage scoped service credentials.
+- [Drift CLI](https://github.com/cuzz22000/drift-cli) ([documentation](https://drift-cli.greyharborsoftware.com/docs/)) — administer tenant keys and recover soft-deleted records without hand-crafting HTTP requests or JSON.
 - [Data model reference](./docs/reference/model.md) — every persisted field and its purpose.
 - [API reference](./docs/reference/api.md) — routes, request rules, scopes, and errors.
 - [Release guide](./docs/how-to/release.md) — the verified GHCR publishing path.

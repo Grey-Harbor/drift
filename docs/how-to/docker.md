@@ -59,9 +59,9 @@ export DRIFT_KEY='drift_<prefix>.<secret>'
 export DRIFT_URL='http://localhost:3000'
 ```
 
-The bootstrap key is powerful: it can read and write graph data, manage tenant keys, view soft-deleted records, and restore them. Create narrower `read` or `write` keys for client services through the admin API after setup.
+The bootstrap key is powerful: it can read and write graph data, manage tenant keys, view soft-deleted records, and restore them. Create narrower `read` or `write` keys for client services through the admin API after setup. As an alternative to constructing those requests directly, the companion [Drift CLI](https://drift-cli.greyharborsoftware.com/docs/) wraps key administration and recovery as commands. It uses the existing admin API and cannot provision tenants.
 
-To create another isolated tenant, run bootstrap again with a different unique slug and store its separate secret. Bootstrap with an existing slug fails rather than creating another key for that tenant; use the tenant's admin API to add or rotate keys. [Tenants, bootstrap, and API keys](../explanation/tenancy-and-api-keys.md) explains this relationship in detail.
+To create another isolated tenant, run bootstrap again with a different unique slug and store its separate secret. Bootstrap with an existing slug fails rather than creating another key for that tenant; use `drift-cli` or the tenant's admin API to add or rotate keys. [Tenants, bootstrap, and API keys](../explanation/tenancy-and-api-keys.md) explains this relationship in detail.
 
 ## Continue with the first graph
 
