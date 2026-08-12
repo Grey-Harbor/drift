@@ -40,15 +40,18 @@ The tenant slug must be unique. Running bootstrap again with `--slug acme` fails
 
 ## Add keys to an existing tenant
 
-Use the tenant's existing admin key to create additional credentials through `POST /v1/admin/keys`. The companion [Drift CLI](https://drift-cli.greyharborsoftware.com/docs/) wraps this contract so operators can create, list, rotate, and revoke keys without hand-crafting requests or JSON.
+Use the tenant's existing admin key to create additional credentials through `POST /v1/admin/keys`. This is the path for a client service key, a read-only reporting key, rotation, or revocation.
 
-```bash
-export DRIFT_ENDPOINT='http://localhost:3000'
-export DRIFT_API_KEY='drift_<admin-prefix>.<admin-secret>'
-drift key create --label inventory-service --scope read --scope write
+```json
+{
+  "label": "inventory-service",
+  "scopes": ["read", "write"]
+}
 ```
 
-The resulting key remains bound to the same tenant as the admin key that created it. It cannot be reassigned to another tenant. Direct API clients may call the same HTTP contract. See the [API reference](../reference/api.md) for the key-management routes, the [tenant and key tutorial](../tutorial/administering-tenants-and-keys.md) for the complete CLI workflow, and the [Docker guide](../how-to/docker.md) for the first bootstrap command.
+The companion [Drift CLI](https://drift-cli.greyharborsoftware.com/docs/) is an alternative interface over the same contract. For example, `drift key create --label inventory-service --scope read --scope write` constructs the request above for the tenant selected by the supplied admin key.
+
+The resulting key remains bound to the same tenant as the admin key that created it. It cannot be reassigned to another tenant. See the [API reference](../reference/api.md) for the key-management routes, the [tenant and key tutorial](../tutorial/administering-tenants-and-keys.md) for both HTTP and CLI workflows, and the [Docker guide](../how-to/docker.md) for the first bootstrap command.
 
 ## Operational guidance
 
