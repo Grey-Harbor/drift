@@ -173,7 +173,7 @@ Retrieval cannot execute code, join sources, traverse relationships, create jobs
 
 Admin routes always operate inside the calling key's tenant. `POST /v1/admin/keys` and rotation require a non-empty `label` and at least one explicit scope. They return key metadata plus a raw `secret` exactly once. List responses never contain a secret.
 
-Rotation immediately revokes the old key and creates a replacement; revocation is also immediate and cannot be undone. These calls do not modify graph records. Use the [tenant and key tutorial](../tutorial/administering-tenants-and-keys.md) for a coordinated operational sequence.
+Rotation immediately revokes the old key and creates a replacement; revocation is also immediate and cannot be undone. These calls do not modify graph records. The companion [Drift CLI](https://drift-cli.greyharborsoftware.com/docs/) wraps these routes for command-line administration without hand-crafted JSON and also supports the admin-only record recovery routes. Direct API clients remain supported. Use the [tenant and key tutorial](../tutorial/administering-tenants-and-keys.md) for a coordinated operational sequence.
 
 ## Error responses
 

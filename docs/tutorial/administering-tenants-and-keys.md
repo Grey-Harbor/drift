@@ -1,18 +1,23 @@
 # Tutorial: administer tenants and API keys
 
-Use this tutorial when you need to learn Drift's administration model before managing real credentials. You will create two isolated tenants, use an admin key to issue a narrower service key, rotate it, and revoke a disposable key.
+Use this tutorial when you need to learn Drift's administration model before managing real credentials. You will create two isolated tenants, then use the companion [Drift CLI](https://drift-cli.greyharborsoftware.com/docs/) to issue a narrower service key, rotate it, and revoke a disposable key without hand-crafting HTTP requests or JSON.
 
-Drift v1 does not expose a tenant-management HTTP API. Creating a tenant is an operator action through `bootstrap`; managing API keys inside an existing tenant is an admin-key API action.
+Drift v1 does not expose a tenant-management HTTP API. Creating a tenant remains a server-local operator action through Drift's bundled `bootstrap` command. `drift-cli` wraps the existing admin HTTP contract for key management and recovery inside an already bootstrapped tenant; it cannot create, select, or enumerate tenants.
 
 ## Before you begin
 
-Start Drift locally or with Docker, then set its URL:
+Start Drift locally or with Docker. The bootstrap examples below run from a Drift source checkout; if you use Docker, substitute the server-local bootstrap command from the [Docker guide](../how-to/docker.md#bootstrap-the-first-tenant).
+
+Build `drift-cli` with Rust 1.85 or newer by following its [operator tutorial](https://drift-cli.greyharborsoftware.com/docs/tutorial/), and make the resulting `drift` executable available on your `PATH`.
+
+Set the endpoint for the companion CLI:
 
 ```bash
-export DRIFT_URL='http://localhost:3000'
+export DRIFT_ENDPOINT='http://localhost:3000'
+drift status
 ```
 
-The examples use [`jq`](https://jqlang.org/) to read JSON response fields.
+The status command verifies Drift's HTTP health and published API contract. It does not require a credential and does not prove backup freshness, storage capacity, or graph correctness.
 
 ## 1. Create two isolated tenants
 
@@ -29,15 +34,22 @@ Set the Acme secret from the first command as your current admin credential:
 export ACME_ADMIN_KEY='drift_<acme-prefix>.<acme-secret>'
 ```
 
-Running bootstrap again with `--slug acme` fails. It never issues an extra key for an existing tenant. That rule prevents accidental reinitialization; use the admin API below to create or rotate Acme keys.
+Running bootstrap again with `--slug acme` fails. It never issues an extra key for an existing tenant. That rule prevents accidental reinitialization; use `drift-cli` below to create or rotate Acme keys through the admin API.
+
+Provide the Acme credential to the companion CLI:
+
+```bash
+export DRIFT_API_KEY="$ACME_ADMIN_KEY"
+```
+
+Avoid placing a real key directly in a command, where it can enter shell history. `drift-cli` also supports `--key-stdin` and named profiles whose configuration names a credential environment variable; it never stores raw credentials in its configuration file.
 
 ## 2. Inspect the tenant's key metadata
 
 An admin key may list keys owned by its own tenant. The response contains metadata only—never a recoverable secret:
 
 ```bash
-curl -fsS "$DRIFT_URL/v1/admin/keys" \
-  -H "Authorization: Bearer $ACME_ADMIN_KEY" | jq
+drift key list
 ```
 
 The bootstrap key appears with `admin` scope. It cannot list Northwind keys because the tenant comes from the Acme credential, not from a request parameter.
@@ -47,53 +59,42 @@ The bootstrap key appears with `admin` scope. It cannot list Northwind keys beca
 Create a key for a client service that needs graph reads and writes but no key administration:
 
 ```bash
-SERVICE_KEY_RESPONSE="$(curl -fsS -X POST "$DRIFT_URL/v1/admin/keys" \
-  -H "Authorization: Bearer $ACME_ADMIN_KEY" \
-  -H 'content-type: application/json' \
-  -d '{
-    "label": "inventory-service",
-    "scopes": ["read", "write"]
-  }')"
-
-export SERVICE_KEY_ID="$(printf '%s' "$SERVICE_KEY_RESPONSE" | jq -r '.apiKey.id')"
-export SERVICE_KEY="$(printf '%s' "$SERVICE_KEY_RESPONSE" | jq -r '.secret')"
+drift key create \
+  --label inventory-service \
+  --scope read \
+  --scope write
 ```
 
-Store `SERVICE_KEY` in the client service's secret store. It is returned once only. The service key can create and query Acme graph data, but it receives `403 Forbidden` if it calls `/v1/admin/keys`.
+The command prints the new key ID and secret. Record the ID for lifecycle operations and store the secret in the client service's secret store immediately; the secret is returned once only. The service key can create and query Acme graph data, but it receives `403 Forbidden` if it calls `/v1/admin/keys`.
+
+Set the printed ID for the remaining examples. Keep the admin credential in `DRIFT_API_KEY`; do not replace it with the narrower service key:
+
+```bash
+export SERVICE_KEY_ID='<inventory-service-key-id>'
+```
 
 ## 4. Rotate a service key
 
-Rotation revokes the old key and returns a replacement key with the requested label and scopes. Update the client service with the new secret before it needs to make another request:
+Rotation immediately revokes the old key and returns a replacement key with the requested label and scopes. Coordinate the client update before running this command, then save the replacement secret as soon as it is printed:
 
 ```bash
-ROTATED_KEY_RESPONSE="$(curl -fsS -X POST "$DRIFT_URL/v1/admin/keys/$SERVICE_KEY_ID/rotate" \
-  -H "Authorization: Bearer $ACME_ADMIN_KEY" \
-  -H 'content-type: application/json' \
-  -d '{
-    "label": "inventory-service",
-    "scopes": ["read", "write"]
-  }')"
-
-export SERVICE_KEY="$(printf '%s' "$ROTATED_KEY_RESPONSE" | jq -r '.secret')"
+drift key rotate "$SERVICE_KEY_ID" \
+  --label inventory-service \
+  --scope read \
+  --scope write \
+  --yes
 ```
 
-The key returned in step 3 is now revoked and cannot authenticate. Treat rotation as a coordinated deployment action: distribute the new secret, then confirm the service is healthy.
+The key returned in step 3 is now revoked and cannot authenticate. The command does not retry the mutation automatically. Distribute the new secret, then confirm the client service is healthy.
 
 ## 5. Revoke a disposable key
 
 To revoke a key that is no longer needed, use its ID. This example creates a short-lived reporting key and immediately revokes it:
 
 ```bash
-TEMPORARY_KEY_ID="$(curl -fsS -X POST "$DRIFT_URL/v1/admin/keys" \
-  -H "Authorization: Bearer $ACME_ADMIN_KEY" \
-  -H 'content-type: application/json' \
-  -d '{
-    "label": "temporary-report",
-    "scopes": ["read"]
-  }' | jq -r '.apiKey.id')"
-
-curl -fsS -X DELETE "$DRIFT_URL/v1/admin/keys/$TEMPORARY_KEY_ID" \
-  -H "Authorization: Bearer $ACME_ADMIN_KEY"
+drift key create --label temporary-report --scope read
+export TEMPORARY_KEY_ID='<temporary-report-key-id>'
+drift key revoke "$TEMPORARY_KEY_ID" --yes
 ```
 
 Revocation is immediate and does not affect graph records. An already revoked key cannot be restored; create a new key if a client needs access again.
@@ -102,7 +103,7 @@ Revocation is immediate and does not affect graph records. An already revoked ke
 
 - `acme` and `northwind` are separate tenants with separate initial admin keys.
 - An API key always determines the tenant for its request.
-- Bootstrap creates a new tenant; admin endpoints manage keys within an existing one.
+- Drift's server-local bootstrap command creates a new tenant; `drift-cli` calls admin endpoints to manage keys within an existing one.
 - Admin keys should be kept for administrative work; client services should receive the narrowest scopes they need.
 
 ## Clean up the tutorial environment
@@ -120,4 +121,4 @@ The default database is `./data/drift.sqlite`. Do not run this reset against a
 shared or production checkout. Selecting whether a database is disposable is an
 operator decision and must not be inferred by automation.
 
-Continue with the [getting-started graph tutorial](./getting-started.md) to create tenant-scoped vertices and edges, or see [tenants, bootstrap, and API keys](../explanation/tenancy-and-api-keys.md) for the model behind these commands.
+Continue with the [getting-started graph tutorial](./getting-started.md) to create tenant-scoped vertices and edges, see [tenants, bootstrap, and API keys](../explanation/tenancy-and-api-keys.md) for the model behind these commands, or use the companion CLI's [command reference](https://drift-cli.greyharborsoftware.com/docs/reference/commands/) for JSON output, named profiles, and soft-delete recovery.

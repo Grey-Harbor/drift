@@ -27,7 +27,7 @@ When a client sends `Authorization: Bearer <raw-key>`, Drift verifies the key an
 
 ## Bootstrap creates a new tenant
 
-Bootstrap is not a login command and it does not add another key to an existing tenant. It creates a new tenant each time it succeeds.
+Bootstrap is not a login command and it does not add another key to an existing tenant. It is a server-local Drift command that creates a new tenant each time it succeeds. The companion `drift-cli` intentionally cannot create, select, or enumerate tenants.
 
 ```bash
 npm run cli -- bootstrap --slug acme --name "Acme Inc."
@@ -40,21 +40,20 @@ The tenant slug must be unique. Running bootstrap again with `--slug acme` fails
 
 ## Add keys to an existing tenant
 
-Use the tenant's existing admin key to create additional credentials through `POST /v1/admin/keys`. This is the path for a client service key, a read-only reporting key, rotation, or revocation.
+Use the tenant's existing admin key to create additional credentials through `POST /v1/admin/keys`. The companion [Drift CLI](https://drift-cli.greyharborsoftware.com/docs/) wraps this contract so operators can create, list, rotate, and revoke keys without hand-crafting requests or JSON.
 
-```json
-{
-  "label": "inventory-service",
-  "scopes": ["read", "write"]
-}
+```bash
+export DRIFT_ENDPOINT='http://localhost:3000'
+export DRIFT_API_KEY='drift_<admin-prefix>.<admin-secret>'
+drift key create --label inventory-service --scope read --scope write
 ```
 
-The resulting key remains bound to the same tenant as the admin key that created it. It cannot be reassigned to another tenant. See the [API reference](../reference/api.md) for the key-management routes and the [Docker guide](../how-to/docker.md) for the first bootstrap command.
+The resulting key remains bound to the same tenant as the admin key that created it. It cannot be reassigned to another tenant. Direct API clients may call the same HTTP contract. See the [API reference](../reference/api.md) for the key-management routes, the [tenant and key tutorial](../tutorial/administering-tenants-and-keys.md) for the complete CLI workflow, and the [Docker guide](../how-to/docker.md) for the first bootstrap command.
 
 ## Operational guidance
 
 - Store every raw secret in a password manager or deployment-secret store immediately.
 - Use the initial admin key only for administration where practical; issue narrower `read` or `write` keys to services.
 - Record the tenant slug alongside each secret so operators know which tenant it controls.
-- Rotate or revoke a key through the tenant's admin API when a secret is exposed.
+- Rotate or revoke a key through `drift-cli` or the tenant's admin API when a secret is exposed.
 - Use bootstrap only to create a new tenant; reset a disposable local database if you need to restart an entire local environment.
