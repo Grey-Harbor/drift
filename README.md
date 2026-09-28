@@ -14,6 +14,7 @@ It gives client applications a calm, stable path to store things, connect them, 
 - [Data model reference](./docs/reference/model.md) — every persisted field and its purpose.
 - [API reference](./docs/reference/api.md) — routes, request rules, scopes, and errors.
 - [Release guide](./docs/how-to/release.md) — the verified GHCR publishing path.
+- [PostgreSQL operations](./docs/how-to/postgres.md) — configure Postgres or migrate an existing SQLite deployment.
 - [Architecture](./ARCHITECTURE.md) — the boundary and portability decisions behind the service.
 
 ## Run the public image

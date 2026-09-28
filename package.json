@@ -18,7 +18,7 @@
     "site:build": "npm --prefix site run build",
     "site:preview": "npm --prefix site run preview",
     "preview": "npm --prefix site run preview",
-    "test": "node --import tsx --test test/**/*.test.ts",
+    "test": "node --import tsx --test --test-concurrency=1 test/**/*.test.ts",
     "check": "tsc --noEmit",
     "format": "prettier --write . --ignore-unknown",
     "format:check": "prettier --check . --ignore-unknown"
@@ -28,11 +28,13 @@
     "@sinclair/typebox": "^0.34.33",
     "better-sqlite3": "^12.4.1",
     "fastify": "^5.6.1",
+    "pg": "^8.23.0",
     "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^24.5.2",
+    "@types/pg": "^8.23.1",
     "prettier": "^3.9.5",
     "tsx": "^4.20.5",
     "typescript": "^5.9.2"

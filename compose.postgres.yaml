@@ -1,0 +1,24 @@
+services:
+  drift:
+    environment:
+      DRIFT_STORAGE: postgres
+      DRIFT_POSTGRES_URL: postgresql://drift:drift@postgres:5432/drift
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: drift
+      POSTGRES_PASSWORD: drift
+      POSTGRES_DB: drift
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U drift -d drift']
+      interval: 2s
+      timeout: 5s
+      retries: 10
+    volumes: ['drift-postgres-data:/var/lib/postgresql/data']
+
+volumes:
+  drift-postgres-data:

@@ -6,7 +6,7 @@ import { DriftService } from '../src/core/service.js';
 
 test('HTTP API authenticates and exposes vertex CRUD', async () => {
   const service = new DriftService(new SqliteDriftRepository(':memory:'));
-  const boot = service.bootstrap('acme', 'Acme');
+  const boot = await service.bootstrap('acme', 'Acme');
   const app = buildApp(service);
   assert.equal((await app.inject('/health')).statusCode, 200);
   assert.equal((await app.inject('/v1/vertices')).statusCode, 401);
@@ -23,7 +23,7 @@ test('HTTP API authenticates and exposes vertex CRUD', async () => {
 
 test('HTTP API enforces scopes, versions, and key management contracts', async () => {
   const service = new DriftService(new SqliteDriftRepository(':memory:'));
-  const boot = service.bootstrap('acme', 'Acme');
+  const boot = await service.bootstrap('acme', 'Acme');
   const app = buildApp(service);
   const auth = { authorization: `Bearer ${boot.key.secret}` };
   const issued = await app.inject({
@@ -69,7 +69,7 @@ test('HTTP API enforces scopes, versions, and key management contracts', async (
 
 test('HTTP API rejects undeclared write fields and documents every public route', async () => {
   const service = new DriftService(new SqliteDriftRepository(':memory:'));
-  const boot = service.bootstrap('contract', 'Contract');
+  const boot = await service.bootstrap('contract', 'Contract');
   const app = buildApp(service);
   const auth = { authorization: `Bearer ${boot.key.secret}` };
   const invalid = await app.inject({

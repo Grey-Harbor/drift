@@ -63,6 +63,86 @@ jobs:
           docker rm --force drift-smoke 2>/dev/null || true
           docker volume rm drift-smoke-data 2>/dev/null || true
 
+  postgres:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        postgres: ['16', '17', '18']
+    services:
+      postgres:
+        image: postgres:${{ matrix.postgres }}-alpine
+        env:
+          POSTGRES_USER: drift
+          POSTGRES_PASSWORD: drift
+          POSTGRES_DB: drift_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U drift -d drift_test"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+        env:
+          DRIFT_TEST_POSTGRES_URL: postgresql://drift:drift@127.0.0.1:5432/drift_test
+
+  postgres-container-smoke:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: drift
+          POSTGRES_PASSWORD: drift
+          POSTGRES_DB: drift_smoke
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U drift -d drift_smoke"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - run: docker build --tag drift:postgres-smoke .
+      - name: Verify Postgres-backed image startup and persistence
+        run: |
+          docker run --detach --name drift-postgres-smoke --network host \
+            --env DRIFT_STORAGE=postgres \
+            --env DRIFT_POSTGRES_URL=postgresql://drift:drift@127.0.0.1:5432/drift_smoke \
+            drift:postgres-smoke
+          for attempt in {1..20}; do
+            curl --fail --silent --show-error http://127.0.0.1:3000/health && break
+            sleep 1
+          done
+          docker exec drift-postgres-smoke node dist/cli.js bootstrap --slug smoke --name Smoke \
+            > bootstrap.json
+          node -e "const value = require('./bootstrap.json'); if (!value.key?.secret) process.exit(1)"
+          docker rm --force drift-postgres-smoke
+          docker run --detach --name drift-postgres-smoke --network host \
+            --env DRIFT_STORAGE=postgres \
+            --env DRIFT_POSTGRES_URL=postgresql://drift:drift@127.0.0.1:5432/drift_smoke \
+            drift:postgres-smoke
+          for attempt in {1..20}; do
+            curl --fail --silent --show-error http://127.0.0.1:3000/health && break
+            sleep 1
+          done
+          if docker exec drift-postgres-smoke node dist/cli.js bootstrap --slug smoke --name Smoke; then
+            echo 'bootstrap unexpectedly created a duplicate tenant' >&2
+            exit 1
+          fi
+      - name: Clean up smoke-test resources
+        if: always()
+        run: docker rm --force drift-postgres-smoke 2>/dev/null || true
+
   website:
     runs-on: ubuntu-latest
     steps:

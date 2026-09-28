@@ -2,6 +2,8 @@
 
 Use this guide when you need a self-contained Drift service with durable local data. A Docker volume keeps the SQLite database outside the container lifecycle, so rebuilding or restarting the service does not discard tenants, API keys, or graph records. Public releases are available at `ghcr.io/grey-harbor/drift` for `linux/amd64` and `linux/arm64`.
 
+This page uses Drift's default SQLite adapter. To connect the same image to PostgreSQL or migrate an existing SQLite database, follow [run Drift with PostgreSQL](./postgres.md).
+
 The examples bind Drift to `127.0.0.1:3000`. Drift does not terminate TLS; choose an authenticated, encrypted ingress and an operator-approved exposure policy before making it reachable beyond the local host.
 
 ## Run a published release

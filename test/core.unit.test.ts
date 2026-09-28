@@ -3,15 +3,15 @@ import assert from 'node:assert/strict';
 import { DriftService } from '../src/core/service.js';
 import { MockRepository } from './support/mock-repository.js';
 
-const setup = () => {
+const setup = async () => {
   const repo = new MockRepository();
   const service = new DriftService(repo, {
     traverseDepth: 2,
     traverseResults: 3,
     retrieveScan: 10,
   });
-  const boot = service.bootstrap('acme', 'Acme');
-  return { repo, service, admin: service.authenticate(boot.key.secret) };
+  const boot = await service.bootstrap('acme', 'Acme');
+  return { repo, service, admin: await service.authenticate(boot.key.secret) };
 };
 const vertexInput = {
   type: 'asset',
@@ -23,26 +23,26 @@ const vertexInput = {
   metadata: {},
 };
 
-test('core bootstraps hashed keys and rejects duplicate tenants', () => {
-  const { repo, service, admin } = setup();
+test('core bootstraps hashed keys and rejects duplicate tenants', async () => {
+  const { repo, service, admin } = await setup();
   const stored = [...repo.keys.values()].find((key) => key.id === admin.keyId)!;
   assert.notEqual(stored.secretHash, stored.prefix);
   assert.equal(stored.secretHash.includes('.'), true);
-  assert.throws(() => service.bootstrap('acme', 'Again'), { code: 'conflict' });
+  await assert.rejects(() => service.bootstrap('acme', 'Again'), { code: 'conflict' });
 });
 
-test('core denies scopes before storage is mutated', () => {
-  const { repo, service, admin } = setup();
-  const read = service.createKey(admin, 'reader', ['read']);
-  const reader = service.authenticate(read.secret);
-  assert.throws(() => service.createVertex(reader, vertexInput), { code: 'forbidden' });
+test('core denies scopes before storage is mutated', async () => {
+  const { repo, service, admin } = await setup();
+  const read = await service.createKey(admin, 'reader', ['read']);
+  const reader = await service.authenticate(read.secret);
+  await assert.rejects(() => service.createVertex(reader, vertexInput), { code: 'forbidden' });
   assert.equal(repo.calls.createVertex, 0);
-  assert.throws(() => service.listKeys(reader), { code: 'forbidden' });
+  await assert.rejects(() => service.listKeys(reader), { code: 'forbidden' });
 });
 
-test('core requires active endpoints and applies traversal limits before delegating', () => {
-  const { repo, service, admin } = setup();
-  assert.throws(
+test('core requires active endpoints and applies traversal limits before delegating', async () => {
+  const { repo, service, admin } = await setup();
+  await assert.rejects(
     () =>
       service.createEdge(admin, {
         fromVertexId: 'missing',
@@ -55,8 +55,8 @@ test('core requires active endpoints and applies traversal limits before delegat
     { code: 'not_found' },
   );
   assert.equal(repo.calls.createEdge, 0);
-  const vertex = service.createVertex(admin, vertexInput);
-  assert.throws(
+  const vertex = await service.createVertex(admin, vertexInput);
+  await assert.rejects(
     () =>
       service.traverse(admin, {
         start: vertex.id,
@@ -70,23 +70,24 @@ test('core requires active endpoints and applies traversal limits before delegat
   assert.equal(repo.calls.edgeLookup, 0);
 });
 
-test('core requires admin access to deleted data and retrieval limits', () => {
-  const { service, admin } = setup();
-  const read = service.authenticate(service.createKey(admin, 'reader', ['read']).secret);
-  assert.throws(() => service.listVertices(read, { limit: 10, includeDeleted: true }), {
+test('core requires admin access to deleted data and retrieval limits', async () => {
+  const { service, admin } = await setup();
+  const issued = await service.createKey(admin, 'reader', ['read']);
+  const read = await service.authenticate(issued.secret);
+  await assert.rejects(() => service.listVertices(read, { limit: 10, includeDeleted: true }), {
     code: 'forbidden',
   });
-  assert.throws(
+  await assert.rejects(
     () => service.retrieve(admin, { source: 'vertices', includeDeleted: false, limit: 1001 }),
     { code: 'limit_exceeded' },
   );
 });
 
-test('core performs traversal through repository edge lookups', () => {
-  const { repo, service, admin } = setup();
-  const source = service.createVertex(admin, { ...vertexInput, title: 'Source' });
-  const target = service.createVertex(admin, { ...vertexInput, title: 'Target' });
-  service.createEdge(admin, {
+test('core performs traversal through repository edge lookups', async () => {
+  const { repo, service, admin } = await setup();
+  const source = await service.createVertex(admin, { ...vertexInput, title: 'Source' });
+  const target = await service.createVertex(admin, { ...vertexInput, title: 'Target' });
+  await service.createEdge(admin, {
     fromVertexId: source.id,
     toVertexId: target.id,
     type: 'connects_to',
@@ -95,7 +96,7 @@ test('core performs traversal through repository edge lookups', () => {
     metadata: {},
   });
 
-  const result = service.traverse(admin, {
+  const result = await service.traverse(admin, {
     start: source.id,
     direction: 'out',
     depth: 1,
@@ -111,12 +112,12 @@ test('core performs traversal through repository edge lookups', () => {
   assert.equal(result.edges[0]?.type, 'connects_to');
 });
 
-test('core applies declarative retrieval to repository records', () => {
-  const { service, admin } = setup();
-  service.createVertex(admin, { ...vertexInput, type: 'device', data: { cost: 2 } });
-  service.createVertex(admin, { ...vertexInput, type: 'device', data: { cost: 4 } });
+test('core applies declarative retrieval to repository records', async () => {
+  const { service, admin } = await setup();
+  await service.createVertex(admin, { ...vertexInput, type: 'device', data: { cost: 2 } });
+  await service.createVertex(admin, { ...vertexInput, type: 'device', data: { cost: 4 } });
 
-  const result = service.retrieve(admin, {
+  const result = await service.retrieve(admin, {
     source: 'vertices',
     projection: [{ field: 'type' }, { field: 'data.cost', as: 'cost' }],
     groupBy: ['type'],
@@ -130,12 +131,12 @@ test('core applies declarative retrieval to repository records', () => {
   assert.deepEqual(result.rows, [{ type: 'device', count: 2, total: 6 }]);
 });
 
-test('core applies retrieval ID and group limits before returning results', () => {
-  const { service, admin } = setup();
-  const first = service.createVertex(admin, { ...vertexInput, type: 'device' });
-  service.createVertex(admin, { ...vertexInput, type: 'service' });
+test('core applies retrieval ID and group limits before returning results', async () => {
+  const { service, admin } = await setup();
+  const first = await service.createVertex(admin, { ...vertexInput, type: 'device' });
+  await service.createVertex(admin, { ...vertexInput, type: 'service' });
 
-  const filtered = service.retrieve(admin, {
+  const filtered = await service.retrieve(admin, {
     source: 'vertices',
     filters: { ids: [first.id] },
     projection: [{ field: 'id' }],
@@ -146,11 +147,11 @@ test('core applies retrieval ID and group limits before returning results', () =
   const limited = new DriftService(new MockRepository(), {
     retrieveGroups: 1,
   });
-  const boot = limited.bootstrap('limited', 'Limited');
-  const principal = limited.authenticate(boot.key.secret);
-  limited.createVertex(principal, { ...vertexInput, type: 'device' });
-  limited.createVertex(principal, { ...vertexInput, type: 'service' });
-  assert.throws(
+  const boot = await limited.bootstrap('limited', 'Limited');
+  const principal = await limited.authenticate(boot.key.secret);
+  await limited.createVertex(principal, { ...vertexInput, type: 'device' });
+  await limited.createVertex(principal, { ...vertexInput, type: 'service' });
+  await assert.rejects(
     () =>
       limited.retrieve(principal, {
         source: 'vertices',
@@ -162,16 +163,19 @@ test('core applies retrieval ID and group limits before returning results', () =
   );
 });
 
-test('core rejects retrieval after its execution budget is exhausted', () => {
+test('core rejects retrieval after its execution budget is exhausted', async () => {
   const clockValues = [0, 251];
   const service = new DriftService(
     new MockRepository(),
     { retrieveExecutionMs: 250 },
     () => clockValues.shift() ?? 251,
   );
-  const boot = service.bootstrap('timed', 'Timed');
-  const admin = service.authenticate(boot.key.secret);
-  assert.throws(() => service.retrieve(admin, { source: 'vertices', includeDeleted: false }), {
-    code: 'limit_exceeded',
-  });
+  const boot = await service.bootstrap('timed', 'Timed');
+  const admin = await service.authenticate(boot.key.secret);
+  await assert.rejects(
+    () => service.retrieve(admin, { source: 'vertices', includeDeleted: false }),
+    {
+      code: 'limit_exceeded',
+    },
+  );
 });

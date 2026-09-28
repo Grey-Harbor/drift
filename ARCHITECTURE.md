@@ -15,13 +15,14 @@ flowchart LR
   Auth --> Service["DriftService"]
   Service --> Port["DriftRepository port"]
   Port --> SQLite["SQLite adapter and migrations"]
+  Port --> Postgres["Postgres adapter and migrations"]
 ```
 
 HTTP handlers validate strict transport input, authenticate a Bearer key, and call `DriftService`. The service enforces tenancy, scopes, versions, graph integrity, deletion behavior, traversal limits, and retrieval limits. Core modules also execute traversal and declarative retrieval algorithms. The SQLite adapter only maps records and executes repository queries, including the narrow connected-edge lookup required by core traversal.
 
-This separation is the portability seam: a Postgres or another storage adapter may replace SQLite only by preserving the `DriftRepository` behavior and its contract tests. It must not change core service rules or public API behavior.
+This separation is the portability seam. SQLite and Postgres are independent peer adapters selected only at the server and CLI composition roots. Both preserve `DriftRepository` behavior and pass the same conformance suite; neither changes core service rules or public API behavior. Storage-specific clients, rows, SQL types, migrations, and connection lifecycles remain inside their adapter.
 
-Drift currently uses direct SQLite queries because they keep the adapter's storage work explicit. An ORM or query builder is a future adapter implementation decision, not an architectural boundary: adopting one must not place traversal, retrieval, authorization, or domain rules back into storage code.
+Drift uses direct SQL in each adapter because it keeps storage work explicit without creating a shared dialect layer. An ORM or query builder remains an adapter-local implementation decision: adopting one must not place traversal, retrieval, authorization, or domain rules into storage code or make one adapter emulate another.
 
 See [why Drift uses storage adapters](./docs/explanation/adapters.md) for the boundary and [implement a storage adapter](./docs/how-to/storage-adapter.md) for the task sequence, compatibility checks, and rollout guidance.
 
@@ -41,7 +42,7 @@ Tenant creation and the first admin key are operator actions through Drift's ser
 
 ## Persisted model
 
-Drift has four first-release tables. IDs are UUIDv7 strings. Timestamps are UTC ISO-8601 strings. SQLite stores JSON values as validated JSON text.
+Drift has four application tables. IDs are UUIDv7 strings and timestamps are returned as UTC ISO-8601 strings. SQLite stores JSON values as validated JSON text; Postgres stores them as `jsonb`. Those physical representations are adapter-specific and map to the same Drift contracts.
 
 ### Tenants
 

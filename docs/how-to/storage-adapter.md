@@ -26,7 +26,7 @@ Add the adapter under `src/adapters/<storage>/` with focused modules for connect
 4. `findConnectedEdges` with direction, edge-type, tenant, and deleted-record filters.
 5. Adapter lifecycle and migration entrypoints without importing adapter types into `src/core`, `src/contracts`, or `src/api`.
 
-The adapter returns persistence outcomes such as a matching record or `null`; `DriftService` continues to own authorization, traversal, retrieval, optimistic-concurrency policy, and public errors.
+The adapter returns asynchronous persistence outcomes such as a matching record or `null`; `DriftService` continues to own authorization, traversal, retrieval, graph-integrity policy, optimistic-concurrency policy, and public errors. Multi-statement atomic behavior belongs in a named repository operation rather than a generic transaction callback, so synchronous and asynchronous adapters preserve the same boundary safely.
 
 ## Preserve the compatibility invariants
 
@@ -42,7 +42,7 @@ Verify all of the following before the adapter can be considered compatible:
 - lists paginate deterministically and connected-edge lookup respects its filters; and
 - no storage-specific type crosses the repository boundary.
 
-Promote the current SQLite integration scenarios into a reusable repository conformance suite when a second adapter is introduced. Add adapter-specific tests for migrations, connection failure, transaction rollback, JSON representation, indexes, and database-version compatibility.
+Run the reusable repository conformance suite unchanged against every adapter. Add adapter-specific tests for migrations, connection failure, transaction rollback, JSON representation, indexes, concurrency, and database-version compatibility. An architecture test must reject storage-client imports from core, contracts, and HTTP modules.
 
 ## Verify the implementation
 

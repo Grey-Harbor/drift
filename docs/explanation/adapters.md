@@ -8,7 +8,7 @@ Use this explanation when deciding where persistence behavior belongs or evaluat
 flowchart LR
   Core["DriftService and core algorithms"] --> Port["DriftRepository"]
   Port --> SQLite["SQLite adapter"]
-  Port -. "future" .-> Postgres["Postgres adapter"]
+  Port --> Postgres["Postgres adapter"]
 ```
 
 The core owns tenancy, authorization, optimistic concurrency policy, graph traversal, and declarative retrieval. An adapter owns persistence:
@@ -22,7 +22,7 @@ An adapter must not introduce a second definition of Drift rules. In particular,
 
 ## Required repository behavior
 
-An adapter must implement every member of `DriftRepository`, including tenant and API-key persistence, vertex/edge CRUD, soft deletion/restoration writes, filtered list reads, and `findConnectedEdges`.
+An adapter must implement every member of the asynchronous `DriftRepository`, including lifecycle cleanup, tenant and API-key persistence, vertex/edge CRUD, atomic soft deletion/restoration writes, filtered list reads, and `findConnectedEdges`.
 
 The port has two intentional shapes:
 
@@ -35,14 +35,14 @@ List methods must preserve the documented filters, deterministic ID ordering, op
 
 An adapter may use direct SQL, a query builder, or an ORM. That is an implementation decision inside the adapter, not a change to the core boundary.
 
-The SQLite adapter separates its own concerns:
+The SQLite and Postgres adapters independently separate their own concerns:
 
 - `repository.ts` translates `DriftRepository` calls to adapter components;
-- `graph-store.ts` contains reusable SQL query mechanics;
-- `mappers.ts` converts SQLite rows and patch fields; and
-- `migrations.ts` creates tables and indexes.
+- `graph-store.ts` contains that backend's graph query mechanics;
+- `mappers.ts` converts backend rows and patch fields; and
+- `migrations.ts` owns that backend's schema and indexes.
 
-A new adapter should use an equally clear internal structure. Do not expose its ORM models, SQL query objects, connection types, or migration APIs to `src/core` or `src/api`.
+A new adapter should use an equally clear internal structure. Do not expose its ORM models, SQL query objects, connection types, or migration APIs to `src/core` or `src/api`. Drift deliberately has no shared SQL abstraction: compatibility comes from the repository port and conformance suite, not from forcing different databases through one dialect.
 
 Direct SQL, an ORM, a query builder, connection pooling, physical JSON representation, migration tools, and index design are adapter-specific. They may vary as long as the repository contract and HTTP-visible behavior remain unchanged. That freedom is useful only inside the boundary; it does not authorize an adapter to weaken tenant isolation or reinterpret a domain value.
 
