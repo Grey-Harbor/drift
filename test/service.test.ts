@@ -3,14 +3,16 @@ import assert from 'node:assert/strict';
 import { SqliteDriftRepository } from '../src/adapters/sqlite/repository.js';
 import { DriftService } from '../src/core/service.js';
 
-const setup = () => {
-  const service = new DriftService(new SqliteDriftRepository(':memory:'));
-  const boot = service.bootstrap('acme', 'Acme');
-  return { service, admin: service.authenticate(boot.key.secret) };
+const setup = async () => {
+  const repository = new SqliteDriftRepository(':memory:');
+  const service = new DriftService(repository);
+  const boot = await service.bootstrap('acme', 'Acme');
+  return { repository, service, admin: await service.authenticate(boot.key.secret) };
 };
-test('isolates tenants, versions writes, and deletes incident edges', () => {
-  const { service, admin } = setup();
-  const a = service.createVertex(admin, {
+test('isolates tenants, versions writes, and deletes incident edges', async (t) => {
+  const { repository, service, admin } = await setup();
+  t.after(() => repository.close());
+  const a = await service.createVertex(admin, {
     type: 'device',
     slug: null,
     externalId: null,
@@ -19,7 +21,7 @@ test('isolates tenants, versions writes, and deletes incident edges', () => {
     data: {},
     metadata: {},
   });
-  const b = service.createVertex(admin, {
+  const b = await service.createVertex(admin, {
     type: 'service',
     slug: null,
     externalId: null,
@@ -28,7 +30,7 @@ test('isolates tenants, versions writes, and deletes incident edges', () => {
     data: {},
     metadata: {},
   });
-  const edge = service.createEdge(admin, {
+  const edge = await service.createEdge(admin, {
     fromVertexId: a.id,
     toVertexId: b.id,
     type: 'runs',
@@ -37,23 +39,28 @@ test('isolates tenants, versions writes, and deletes incident edges', () => {
     metadata: {},
   });
   assert.equal(
-    service.traverse(admin, {
-      start: a.id,
-      direction: 'out',
-      depth: 1,
-      limit: 10,
-      includeDeleted: false,
-    }).edges.length,
+    (
+      await service.traverse(admin, {
+        start: a.id,
+        direction: 'out',
+        depth: 1,
+        limit: 10,
+        includeDeleted: false,
+      })
+    ).edges.length,
     1,
   );
-  assert.throws(() => service.patchVertex(admin, a.id, 99, { title: 'bad' }), { code: 'conflict' });
-  service.deleteVertex(admin, a.id, a.version);
-  assert.throws(() => service.getEdge(admin, edge.id), { code: 'not_found' });
-  assert.equal(service.getEdge(admin, edge.id, true).deletedAt !== null, true);
+  await assert.rejects(() => service.patchVertex(admin, a.id, 99, { title: 'bad' }), {
+    code: 'conflict',
+  });
+  await service.deleteVertex(admin, a.id, a.version);
+  await assert.rejects(() => service.getEdge(admin, edge.id), { code: 'not_found' });
+  assert.equal((await service.getEdge(admin, edge.id, true)).deletedAt !== null, true);
 });
-test('retrieves declarative grouped aggregates', () => {
-  const { service, admin } = setup();
-  service.createVertex(admin, {
+test('retrieves declarative grouped aggregates', async (t) => {
+  const { repository, service, admin } = await setup();
+  t.after(() => repository.close());
+  await service.createVertex(admin, {
     type: 'device',
     slug: null,
     externalId: null,
@@ -62,7 +69,7 @@ test('retrieves declarative grouped aggregates', () => {
     data: { cost: 3 },
     metadata: {},
   });
-  service.createVertex(admin, {
+  await service.createVertex(admin, {
     type: 'device',
     slug: null,
     externalId: null,
@@ -71,7 +78,7 @@ test('retrieves declarative grouped aggregates', () => {
     data: { cost: 4 },
     metadata: {},
   });
-  const result = service.retrieve(admin, {
+  const result = await service.retrieve(admin, {
     source: 'vertices',
     projection: [{ field: 'type' }, { field: 'data.cost', as: 'cost' }],
     groupBy: ['type'],

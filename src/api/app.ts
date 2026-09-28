@@ -49,6 +49,7 @@ export function buildApp(service: DriftService) {
       components: { securitySchemes: { bearerAuth: { type: 'http', scheme: 'bearer' } } },
     },
   });
+  app.addHook('onClose', async () => service.close());
   app.after((error) => {
     if (error) throw error;
     app.setErrorHandler((error, request, reply) => {
@@ -80,7 +81,7 @@ export function buildApp(service: DriftService) {
           .send({ error: { code: 'unauthorized', message: 'Bearer API key required' } });
         return reply;
       }
-      request.principal = service.authenticate(auth.slice(7));
+      request.principal = await service.authenticate(auth.slice(7));
     });
     const p = (r: FastifyRequest) => r.principal!;
     app.get('/v1/openapi.json', { schema: openApiSchema }, async () => app.swagger());
@@ -91,8 +92,8 @@ export function buildApp(service: DriftService) {
       service.createVertex(p(r), {
         ...(r.body as any),
         status: (r.body as any).status ?? 'active',
-        data: (r.body as any).data ?? {},
-        metadata: (r.body as any).metadata ?? {},
+        data: (r.body as any).data === undefined ? {} : (r.body as any).data,
+        metadata: (r.body as any).metadata === undefined ? {} : (r.body as any).metadata,
       }),
     );
     app.get('/v1/vertices/:id', { schema: vertexByIdSchema }, async (r) =>
@@ -130,8 +131,8 @@ export function buildApp(service: DriftService) {
       service.createEdge(p(r), {
         ...(r.body as any),
         status: (r.body as any).status ?? 'active',
-        data: (r.body as any).data ?? {},
-        metadata: (r.body as any).metadata ?? {},
+        data: (r.body as any).data === undefined ? {} : (r.body as any).data,
+        metadata: (r.body as any).metadata === undefined ? {} : (r.body as any).metadata,
       }),
     );
     app.get('/v1/edges/:id', { schema: edgeByIdSchema }, async (r) =>
@@ -159,7 +160,7 @@ export function buildApp(service: DriftService) {
       return service.createKey(p(r), b.label, b.scopes);
     });
     app.delete('/v1/admin/keys/:id', { schema: revokeKeySchema }, async (r) => {
-      service.revokeKey(p(r), (r.params as any).id);
+      await service.revokeKey(p(r), (r.params as any).id);
       return { ok: true };
     });
     app.post('/v1/admin/keys/:id/rotate', { schema: rotateKeySchema }, async (r) => {

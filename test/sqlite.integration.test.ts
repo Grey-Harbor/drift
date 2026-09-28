@@ -3,10 +3,11 @@ import assert from 'node:assert/strict';
 import { SqliteDriftRepository } from '../src/adapters/sqlite/repository.js';
 import { DriftService } from '../src/core/service.js';
 
-const setup = () => {
-  const service = new DriftService(new SqliteDriftRepository(':memory:'));
-  const boot = service.bootstrap('acme', 'Acme');
-  return { service, admin: service.authenticate(boot.key.secret) };
+const setup = async () => {
+  const repository = new SqliteDriftRepository(':memory:');
+  const service = new DriftService(repository);
+  const boot = await service.bootstrap('acme', 'Acme');
+  return { repository, service, admin: await service.authenticate(boot.key.secret) };
 };
 const input = (title: string, type = 'asset') => ({
   type,
@@ -18,16 +19,21 @@ const input = (title: string, type = 'asset') => ({
   metadata: { source: 'test' },
 });
 
-test('SQLite applies cursor pagination, filters, and JSON round trips', () => {
-  const { service, admin } = setup();
-  const a = service.createVertex(admin, input('A', 'device'));
-  service.createVertex(admin, input('B', 'service'));
-  service.createVertex(admin, input('C', 'device'));
-  const first = service.listVertices(admin, { type: 'device', limit: 1, includeDeleted: false });
+test('SQLite applies cursor pagination, filters, and JSON round trips', async (t) => {
+  const { repository, service, admin } = await setup();
+  t.after(() => repository.close());
+  const a = await service.createVertex(admin, input('A', 'device'));
+  await service.createVertex(admin, input('B', 'service'));
+  await service.createVertex(admin, input('C', 'device'));
+  const first = await service.listVertices(admin, {
+    type: 'device',
+    limit: 1,
+    includeDeleted: false,
+  });
   assert.equal(first.items.length, 1);
   assert.equal(first.items[0]!.data && (first.items[0]!.data as any).nested.cost, 2);
   assert.notEqual(first.nextCursor, null);
-  const second = service.listVertices(admin, {
+  const second = await service.listVertices(admin, {
     type: 'device',
     limit: 5,
     cursor: first.nextCursor!,
@@ -37,11 +43,12 @@ test('SQLite applies cursor pagination, filters, and JSON round trips', () => {
   assert.notEqual(second.items[0]!.id, a.id);
 });
 
-test('SQLite restores only explicit resources and keeps incident edges deleted', () => {
-  const { service, admin } = setup();
-  const a = service.createVertex(admin, input('A'));
-  const b = service.createVertex(admin, input('B'));
-  const edge = service.createEdge(admin, {
+test('SQLite restores only explicit resources and keeps incident edges deleted', async (t) => {
+  const { repository, service, admin } = await setup();
+  t.after(() => repository.close());
+  const a = await service.createVertex(admin, input('A'));
+  const b = await service.createVertex(admin, input('B'));
+  const edge = await service.createEdge(admin, {
     fromVertexId: a.id,
     toVertexId: b.id,
     type: 'contains',
@@ -49,21 +56,24 @@ test('SQLite restores only explicit resources and keeps incident edges deleted',
     data: {},
     metadata: {},
   });
-  const deleted = service.deleteVertex(admin, a.id, a.version);
-  const deletedEdge = service.getEdge(admin, edge.id, true);
-  const restored = service.restoreVertex(admin, a.id, deleted.version);
+  const deleted = await service.deleteVertex(admin, a.id, a.version);
+  const deletedEdge = await service.getEdge(admin, edge.id, true);
+  const restored = await service.restoreVertex(admin, a.id, deleted.version);
   assert.equal(restored.deletedAt, null);
-  assert.notEqual(service.getEdge(admin, edge.id, true).deletedAt, null);
-  assert.equal(deletedEdge.version + 0, service.getEdge(admin, edge.id, true).version);
-  assert.throws(() => service.restoreEdge(admin, edge.id, edge.version), { code: 'conflict' });
+  assert.notEqual((await service.getEdge(admin, edge.id, true)).deletedAt, null);
+  assert.equal(deletedEdge.version + 0, (await service.getEdge(admin, edge.id, true)).version);
+  await assert.rejects(() => service.restoreEdge(admin, edge.id, edge.version), {
+    code: 'conflict',
+  });
 });
 
-test('SQLite traversal respects direction, type filters, and tenant boundaries', () => {
-  const { service, admin } = setup();
-  const a = service.createVertex(admin, input('A'));
-  const b = service.createVertex(admin, input('B'));
-  const c = service.createVertex(admin, input('C'));
-  service.createEdge(admin, {
+test('SQLite traversal respects direction, type filters, and tenant boundaries', async (t) => {
+  const { repository, service, admin } = await setup();
+  t.after(() => repository.close());
+  const a = await service.createVertex(admin, input('A'));
+  const b = await service.createVertex(admin, input('B'));
+  const c = await service.createVertex(admin, input('C'));
+  await service.createEdge(admin, {
     fromVertexId: a.id,
     toVertexId: b.id,
     type: 'contains',
@@ -71,7 +81,7 @@ test('SQLite traversal respects direction, type filters, and tenant boundaries',
     data: {},
     metadata: {},
   });
-  service.createEdge(admin, {
+  await service.createEdge(admin, {
     fromVertexId: b.id,
     toVertexId: c.id,
     type: 'depends_on',
@@ -79,7 +89,7 @@ test('SQLite traversal respects direction, type filters, and tenant boundaries',
     data: {},
     metadata: {},
   });
-  const result = service.traverse(admin, {
+  const result = await service.traverse(admin, {
     start: a.id,
     direction: 'out',
     edgeTypes: ['contains'],

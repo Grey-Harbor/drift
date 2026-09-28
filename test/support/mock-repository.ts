@@ -14,32 +14,29 @@ export class MockRepository implements DriftRepository {
   readonly keys = new Map<string, ApiKey & { secretHash: string }>();
   readonly vertices = new Map<string, Vertex>();
   readonly edges = new Map<string, Edge>();
-  readonly calls = { transaction: 0, createVertex: 0, createEdge: 0, edgeLookup: 0 };
-  transaction<T>(operation: () => T): T {
-    this.calls.transaction++;
-    return operation();
-  }
-  createTenant(tenant: Tenant) {
+  readonly calls = { createVertex: 0, createEdge: 0, edgeLookup: 0 };
+  async close() {}
+  async createTenant(tenant: Tenant) {
     this.tenants.set(tenant.slug, tenant);
   }
-  findTenantBySlug(slug: string) {
+  async findTenantBySlug(slug: string) {
     return this.tenants.get(slug) ?? null;
   }
-  createApiKey(key: ApiKey & { secretHash: string }) {
+  async createApiKey(key: ApiKey & { secretHash: string }) {
     this.keys.set(key.prefix, key);
   }
-  findApiKeyByPrefix(prefix: string) {
+  async findApiKeyByPrefix(prefix: string) {
     return this.keys.get(prefix) ?? null;
   }
-  touchApiKey(id: string, at: string) {
+  async touchApiKey(id: string, at: string) {
     for (const key of this.keys.values()) if (key.id === id) key.lastUsedAt = at;
   }
-  listApiKeys(tenantId: string) {
+  async listApiKeys(tenantId: string) {
     return [...this.keys.values()]
       .filter((key) => key.tenantId === tenantId)
       .map(({ secretHash: _, ...key }) => key);
   }
-  revokeApiKey(tenantId: string, id: string, at: string) {
+  async revokeApiKey(tenantId: string, id: string, at: string) {
     for (const key of this.keys.values())
       if (key.tenantId === tenantId && key.id === id && !key.revokedAt) {
         key.revokedAt = at;
@@ -47,15 +44,15 @@ export class MockRepository implements DriftRepository {
       }
     return false;
   }
-  createVertex(vertex: Vertex) {
+  async createVertex(vertex: Vertex) {
     this.calls.createVertex++;
     this.vertices.set(vertex.id, vertex);
   }
-  getVertex(tenantId: string, id: string, includeDeleted: boolean) {
+  async getVertex(tenantId: string, id: string, includeDeleted: boolean) {
     const vertex = this.vertices.get(id);
     return vertex?.tenantId === tenantId && (includeDeleted || !vertex.deletedAt) ? vertex : null;
   }
-  listVertices(tenantId: string, options: ListOptions): Page<Vertex> {
+  async listVertices(tenantId: string, options: ListOptions): Promise<Page<Vertex>> {
     return {
       items: [...this.vertices.values()].filter(
         (v) =>
@@ -68,14 +65,20 @@ export class MockRepository implements DriftRepository {
       nextCursor: null,
     };
   }
-  updateVertex(tenantId: string, id: string, version: number, patch: Partial<Vertex>, at: string) {
-    const vertex = this.getVertex(tenantId, id, false);
+  async updateVertex(
+    tenantId: string,
+    id: string,
+    version: number,
+    patch: Partial<Vertex>,
+    at: string,
+  ) {
+    const vertex = await this.getVertex(tenantId, id, false);
     if (!vertex || vertex.version !== version) return null;
     Object.assign(vertex, patch, { version: version + 1, updatedAt: at });
     return vertex;
   }
-  softDeleteVertexWithEdges(tenantId: string, id: string, version: number, at: string) {
-    const vertex = this.getVertex(tenantId, id, false);
+  async softDeleteVertexWithEdges(tenantId: string, id: string, version: number, at: string) {
+    const vertex = await this.getVertex(tenantId, id, false);
     if (!vertex || vertex.version !== version) return null;
     Object.assign(vertex, { deletedAt: at, updatedAt: at, version: version + 1 });
     for (const edge of this.edges.values())
@@ -87,21 +90,22 @@ export class MockRepository implements DriftRepository {
         Object.assign(edge, { deletedAt: at, updatedAt: at, version: edge.version + 1 });
     return vertex;
   }
-  restoreVertex(tenantId: string, id: string, version: number, at: string) {
-    const vertex = this.getVertex(tenantId, id, true);
+  async restoreVertex(tenantId: string, id: string, version: number, at: string) {
+    const vertex = await this.getVertex(tenantId, id, true);
     if (!vertex?.deletedAt || vertex.version !== version) return null;
     Object.assign(vertex, { deletedAt: null, updatedAt: at, version: version + 1 });
     return vertex;
   }
-  createEdge(edge: Edge) {
+  async createEdge(edge: Edge) {
     this.calls.createEdge++;
     this.edges.set(edge.id, edge);
+    return true;
   }
-  getEdge(tenantId: string, id: string, includeDeleted: boolean) {
+  async getEdge(tenantId: string, id: string, includeDeleted: boolean) {
     const edge = this.edges.get(id);
     return edge?.tenantId === tenantId && (includeDeleted || !edge.deletedAt) ? edge : null;
   }
-  listEdges(tenantId: string, options: ListOptions): Page<Edge> {
+  async listEdges(tenantId: string, options: ListOptions): Promise<Page<Edge>> {
     return {
       items: [...this.edges.values()].filter(
         (e) =>
@@ -116,25 +120,31 @@ export class MockRepository implements DriftRepository {
       nextCursor: null,
     };
   }
-  updateEdge(tenantId: string, id: string, version: number, patch: Partial<Edge>, at: string) {
-    const edge = this.getEdge(tenantId, id, false);
+  async updateEdge(
+    tenantId: string,
+    id: string,
+    version: number,
+    patch: Partial<Edge>,
+    at: string,
+  ) {
+    const edge = await this.getEdge(tenantId, id, false);
     if (!edge || edge.version !== version) return null;
     Object.assign(edge, patch, { version: version + 1, updatedAt: at });
     return edge;
   }
-  softDeleteEdge(tenantId: string, id: string, version: number, at: string) {
-    const edge = this.getEdge(tenantId, id, false);
+  async softDeleteEdge(tenantId: string, id: string, version: number, at: string) {
+    const edge = await this.getEdge(tenantId, id, false);
     if (!edge || edge.version !== version) return null;
     Object.assign(edge, { deletedAt: at, updatedAt: at, version: version + 1 });
     return edge;
   }
-  restoreEdge(tenantId: string, id: string, version: number, at: string) {
-    const edge = this.getEdge(tenantId, id, true);
+  async restoreEdge(tenantId: string, id: string, version: number, at: string) {
+    const edge = await this.getEdge(tenantId, id, true);
     if (!edge?.deletedAt || edge.version !== version) return null;
     Object.assign(edge, { deletedAt: null, updatedAt: at, version: version + 1 });
     return edge;
   }
-  findConnectedEdges(
+  async findConnectedEdges(
     tenantId: string,
     vertexIds: string[],
     direction: TraverseInput['direction'],
