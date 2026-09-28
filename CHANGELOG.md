@@ -3,6 +3,19 @@
 All notable Drift releases are recorded here. Drift follows semantic versioning
 for its service release and versioned `/v1` HTTP contract.
 
+## [Unreleased]
+
+### Added
+
+- PostgreSQL 16+ persistence as a peer `DriftRepository` adapter.
+- Verified offline SQLite-to-Postgres migration through `migrate-data`.
+- Shared repository conformance tests for SQLite and Postgres.
+
+### Changed
+
+- Repository and core persistence operations are asynchronous while the `/v1` HTTP contract remains unchanged.
+- Explicit JSON `null` payloads are preserved instead of being replaced with empty objects.
+
 ## [0.1.0] - 2026-07-22
 
 ### Added
