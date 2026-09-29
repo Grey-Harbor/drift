@@ -23,7 +23,7 @@ const principles = [
   {
     title: 'Storage stays replaceable',
     description:
-      'SQLite is the first adapter, not the architecture. Core behavior depends on a stable repository port.',
+      'Start with SQLite for a low-friction default. PostgreSQL is a peer adapter when managed operations or a migration path fit your deployment.',
   },
 ] as const;
 
@@ -120,7 +120,8 @@ export default function HomePage() {
             <div className="hero-panel-card">
               <strong>A portable core</strong>
               <p>
-                Use SQLite today while keeping application rules independent from any one database.
+                Start with SQLite, then move to PostgreSQL—or another compatible adapter—without
+                rewriting application rules.
               </p>
             </div>
           </aside>

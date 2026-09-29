@@ -69,6 +69,8 @@ Use these labels consistently:
 - **Recommended:** operational advice that adopters may adapt deliberately.
 - **Adapter-specific:** behavior of one persistence implementation, not a portable Drift guarantee.
 
+Present SQLite as the lightweight default and PostgreSQL as an available peer adapter. Describe future adapters through the repository contract, and do not imply that SQLite is Drift's only persistence option. Keep adapter-specific examples clear about which backend they use.
+
 The generated OpenAPI document at `GET /v1/openapi.json` is the canonical HTTP contract. `src/interfaces/repository.ts` is the canonical storage port. Link to the relevant reference or architecture page instead of copying a contract into multiple guides.
 
 ## Cover operations when relevant

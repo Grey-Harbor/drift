@@ -2,7 +2,7 @@
 
 Use this guide when adding a persistence backend behind Drift's existing repository port. The goal is to preserve every service and HTTP guarantee while isolating connection, mapping, query, transaction, and migration mechanics inside the new adapter.
 
-Read [why Drift uses storage adapters](../explanation/adapters.md), [Architecture](../../ARCHITECTURE.md), the canonical `src/interfaces/repository.ts` port, and the SQLite adapter before changing code. A new adapter is not an opportunity to redesign the public contract.
+Read [why Drift uses storage adapters](../explanation/adapters.md), [Architecture](../../ARCHITECTURE.md), the canonical `src/interfaces/repository.ts` port, and both existing adapters before changing code. A new adapter is not an opportunity to redesign the public contract.
 
 ## Define the rollout decision
 

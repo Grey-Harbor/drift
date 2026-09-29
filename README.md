@@ -4,7 +4,9 @@
 
 Drift is a compact, tenant-safe graph persistence service for connected application data.
 
-It gives client applications a calm, stable path to store things, connect them, traverse relationships, and retrieve bounded aggregates—without making SQLite the application architecture.
+It gives client applications a calm, stable path to store things, connect them, traverse relationships, and retrieve bounded aggregates—without making persistence the application architecture.
+
+SQLite is the lightweight default. PostgreSQL is also available, with an offline migration path from SQLite.
 
 ## Start here
 
