@@ -5,7 +5,7 @@ for its service release and versioned `/v1` HTTP contract.
 
 ## [Unreleased]
 
-## [0.2.0] - pending
+## [0.2.0] - 2026-09-29
 
 ### Added
 
