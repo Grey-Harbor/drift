@@ -200,12 +200,14 @@ export class DriftService {
       limit: this.limits.retrieveScan,
       includeDeleted: input.includeDeleted,
     };
-    const records =
+    const page =
       input.source === 'vertices'
-        ? (await this.repo.listVertices(p.tenantId, options)).items
-        : (await this.repo.listEdges(p.tenantId, options)).items;
+        ? await this.repo.listVertices(p.tenantId, options)
+        : await this.repo.listEdges(p.tenantId, options);
     assertWithinBudget();
-    return runRetrieval(records, input, {
+    if (page.nextCursor)
+      throw new DriftError('limit_exceeded', 'Retrieval exceeds server scan limit', 422);
+    return runRetrieval(page.items, input, {
       maxGroups: this.limits.retrieveGroups,
       maxResults: this.limits.retrieveResults,
       assertWithinBudget,
