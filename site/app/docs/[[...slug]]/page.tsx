@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 
 import { notFound } from 'next/navigation';
-import { PageArticle, PageRoot } from 'fumadocs-ui/layouts/docs/page';
 import { DocsBody, DocsDescription, DocsTitle } from 'fumadocs-ui/page';
 
 import { SiteFooter } from '@/components/site-footer';
@@ -69,13 +68,25 @@ export default async function DocsPageRoute({ params }: DocsPageProps) {
     <>
       <main className="docs-shell" id="main">
         <div className="docs-frame">
-          <PageRoot toc={page.toc.length > 0 ? { toc: page.toc } : false} className="docs-root">
-            <PageArticle className="docs-article">
+          <div className="docs-root">
+            <article className="docs-article">
               <DocsTitle>{title}</DocsTitle>
               {description ? <DocsDescription>{description}</DocsDescription> : null}
               <DocsBody>{page.body}</DocsBody>
-            </PageArticle>
-          </PageRoot>
+            </article>
+            {page.toc.length > 0 ? (
+              <nav className="docs-toc" aria-label="On this page">
+                <p>On this page</p>
+                <ul>
+                  {page.toc.map((item) => (
+                    <li key={item.url} data-depth={item.depth}>
+                      <a href={item.url}>{item.title}</a>
+                    </li>
+                  ))}
+                </ul>
+              </nav>
+            ) : null}
+          </div>
         </div>
       </main>
       <SiteFooter />

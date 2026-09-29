@@ -18,6 +18,7 @@ export async function traverseGraph(
       input.direction,
       input.edgeTypes,
       input.includeDeleted,
+      input.limit - traversedEdges.length,
     );
     const nextFrontier: string[] = [];
 

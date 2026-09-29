@@ -43,12 +43,15 @@ export class PostgresDriftRepository implements DriftRepository {
     await this.pool.end();
   }
 
-  async createTenant(value: Tenant) {
-    await this.pool.query(
-      `INSERT INTO tenants(id,slug,name,status,created_at,updated_at)
-       VALUES($1,$2,$3,$4,$5,$6)`,
-      [value.id, value.slug, value.name, value.status, value.createdAt, value.updatedAt],
-    );
+  async bootstrapTenant(tenant: Tenant, adminKey: ApiKey & { secretHash: string }) {
+    await withTransaction(this.pool, async (client) => {
+      await client.query(
+        `INSERT INTO tenants(id,slug,name,status,created_at,updated_at)
+         VALUES($1,$2,$3,$4,$5,$6)`,
+        [tenant.id, tenant.slug, tenant.name, tenant.status, tenant.createdAt, tenant.updatedAt],
+      );
+      await insertApiKey(client, adminKey);
+    });
   }
 
   async findTenantBySlug(slug: string) {
@@ -57,21 +60,7 @@ export class PostgresDriftRepository implements DriftRepository {
   }
 
   async createApiKey(value: ApiKey & { secretHash: string }) {
-    await this.pool.query(
-      `INSERT INTO api_keys(id,tenant_id,label,prefix,secret_hash,scopes,created_at,last_used_at,revoked_at)
-       VALUES($1,$2,$3,$4,$5,$6::text[],$7,$8,$9)`,
-      [
-        value.id,
-        value.tenantId,
-        value.label,
-        value.prefix,
-        value.secretHash,
-        value.scopes,
-        value.createdAt,
-        value.lastUsedAt,
-        value.revokedAt,
-      ],
-    );
+    await insertApiKey(this.pool, value);
   }
 
   async findApiKeyByPrefix(prefix: string) {
@@ -98,6 +87,24 @@ export class PostgresDriftRepository implements DriftRepository {
       [at, tenantId, id],
     );
     return result.rowCount === 1;
+  }
+
+  async rotateApiKey(
+    tenantId: string,
+    id: string,
+    replacement: ApiKey & { secretHash: string },
+    at: string,
+  ) {
+    return await withTransaction(this.pool, async (client) => {
+      const result = await client.query(
+        `UPDATE api_keys SET revoked_at=$1
+         WHERE tenant_id=$2 AND id::text=$3 AND revoked_at IS NULL`,
+        [at, tenantId, id],
+      );
+      if (result.rowCount !== 1) return false;
+      await insertApiKey(client, replacement);
+      return true;
+    });
   }
 
   async createVertex(value: Vertex) {
@@ -299,6 +306,7 @@ export class PostgresDriftRepository implements DriftRepository {
     direction: TraverseInput['direction'],
     edgeTypes: string[] | undefined,
     includeDeleted: boolean,
+    limit: number,
   ) {
     return await this.graph.findConnected(
       mapEdge,
@@ -307,8 +315,27 @@ export class PostgresDriftRepository implements DriftRepository {
       direction,
       edgeTypes,
       includeDeleted,
+      limit,
     );
   }
+}
+
+async function insertApiKey(db: PostgresPool | PoolClient, value: ApiKey & { secretHash: string }) {
+  await db.query(
+    `INSERT INTO api_keys(id,tenant_id,label,prefix,secret_hash,scopes,created_at,last_used_at,revoked_at)
+     VALUES($1,$2,$3,$4,$5,$6::text[],$7,$8,$9)`,
+    [
+      value.id,
+      value.tenantId,
+      value.label,
+      value.prefix,
+      value.secretHash,
+      value.scopes,
+      value.createdAt,
+      value.lastUsedAt,
+      value.revokedAt,
+    ],
+  );
 }
 
 async function lockActiveEndpoints(

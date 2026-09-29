@@ -68,6 +68,7 @@ export class SqliteGraphStore {
     direction: TraverseInput['direction'],
     edgeTypes: string[] | undefined,
     includeDeleted: boolean,
+    limit: number,
   ): T[] {
     if (!vertexIds.length) return [];
     const placeholders = vertexIds.map(() => '?').join(',');
@@ -76,9 +77,10 @@ export class SqliteGraphStore {
     let sql = `SELECT * FROM edges WHERE tenant_id=? AND ${endpointClause}`;
     if (!includeDeleted) sql += ' AND deleted_at IS NULL';
     if (edgeTypes?.length) sql += ` AND type IN (${edgeTypes.map(() => '?').join(',')})`;
+    sql += ' ORDER BY id ASC LIMIT ?';
     return this.db
       .prepare(sql)
-      .all(tenantId, ...endpointParameters, ...(edgeTypes ?? []))
+      .all(tenantId, ...endpointParameters, ...(edgeTypes ?? []), limit)
       .map(map);
   }
 }

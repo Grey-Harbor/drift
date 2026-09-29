@@ -5,6 +5,8 @@ for its service release and versioned `/v1` HTTP contract.
 
 ## [Unreleased]
 
+## [0.2.0] - pending
+
 ### Added
 
 - PostgreSQL 16+ persistence as a peer `DriftRepository` adapter.
@@ -15,6 +17,18 @@ for its service release and versioned `/v1` HTTP contract.
 
 - Repository and core persistence operations are asynchronous while the `/v1` HTTP contract remains unchanged.
 - Explicit JSON `null` payloads are preserved instead of being replaced with empty objects.
+
+### Fixed
+
+- Admin `includeDeleted=true` reads honor the validated query parameter.
+- Retrieval rejects scans that would return incomplete aggregates.
+- Tenant bootstrap and API-key rotation are atomic across their database writes.
+- Traversal bounds connected-edge queries before loading results.
+
+### Operational notes
+
+- SQLite remains the default adapter. PostgreSQL 16+ requires `DRIFT_STORAGE=postgres` and `DRIFT_POSTGRES_URL`; existing SQLite data can move through the verified offline `migrate-data` command.
+- `/v1` request and response contracts remain unchanged; no npm package or client SDK is published.
 
 ## [0.1.0] - 2026-07-22
 

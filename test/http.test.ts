@@ -67,6 +67,56 @@ test('HTTP API enforces scopes, versions, and key management contracts', async (
   await app.close();
 });
 
+test('HTTP API permits admins to read deleted records when requested', async () => {
+  const service = new DriftService(new SqliteDriftRepository(':memory:'));
+  const boot = await service.bootstrap('deleted', 'Deleted');
+  const app = buildApp(service);
+  const auth = { authorization: `Bearer ${boot.key.secret}` };
+  const created = await app.inject({
+    method: 'POST',
+    url: '/v1/vertices',
+    headers: auth,
+    payload: { type: 'asset' },
+  });
+  const vertex = created.json();
+  const deleted = await app.inject({
+    method: 'DELETE',
+    url: `/v1/vertices/${vertex.id}`,
+    headers: auth,
+    payload: { version: vertex.version },
+  });
+  assert.equal(deleted.statusCode, 200);
+  assert.equal(
+    (await app.inject({ method: 'GET', url: `/v1/vertices/${vertex.id}`, headers: auth }))
+      .statusCode,
+    404,
+  );
+  const recovered = await app.inject({
+    method: 'GET',
+    url: `/v1/vertices/${vertex.id}?includeDeleted=true`,
+    headers: auth,
+  });
+  assert.equal(recovered.statusCode, 200);
+  assert.equal(recovered.json().id, vertex.id);
+  const listed = await app.inject({
+    method: 'GET',
+    url: '/v1/vertices?includeDeleted=true',
+    headers: auth,
+  });
+  assert.equal(listed.json().items.length, 1);
+
+  const reader = await service.createKey(await service.authenticate(boot.key.secret), 'reader', [
+    'read',
+  ]);
+  const forbidden = await app.inject({
+    method: 'GET',
+    url: `/v1/vertices/${vertex.id}?includeDeleted=true`,
+    headers: { authorization: `Bearer ${reader.secret}` },
+  });
+  assert.equal(forbidden.statusCode, 403);
+  await app.close();
+});
+
 test('HTTP API rejects undeclared write fields and documents every public route', async () => {
   const service = new DriftService(new SqliteDriftRepository(':memory:'));
   const boot = await service.bootstrap('contract', 'Contract');

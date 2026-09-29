@@ -84,6 +84,7 @@ export class PostgresGraphStore {
     direction: TraverseInput['direction'],
     edgeTypes: string[] | undefined,
     includeDeleted: boolean,
+    limit: number,
   ): Promise<T[]> {
     if (!vertexIds.length) return [];
     const values: unknown[] = [tenantId, vertexIds];
@@ -99,8 +100,9 @@ export class PostgresGraphStore {
       values.push(edgeTypes);
       where.push(`type=ANY($${values.length}::text[])`);
     }
+    values.push(limit);
     const result = await this.db.query(
-      `SELECT * FROM edges WHERE ${where.join(' AND ')} ORDER BY id::text ASC`,
+      `SELECT * FROM edges WHERE ${where.join(' AND ')} ORDER BY id::text ASC LIMIT $${values.length}`,
       values,
     );
     return result.rows.map(map);

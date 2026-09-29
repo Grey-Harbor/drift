@@ -43,6 +43,26 @@ test('SQLite applies cursor pagination, filters, and JSON round trips', async (t
   assert.notEqual(second.items[0]!.id, a.id);
 });
 
+test('SQLite retrieval rejects incomplete scans instead of returning partial aggregates', async (t) => {
+  const repository = new SqliteDriftRepository(':memory:');
+  const service = new DriftService(repository, { retrieveScan: 1 });
+  t.after(() => repository.close());
+  const boot = await service.bootstrap('scan', 'Scan');
+  const admin = await service.authenticate(boot.key.secret);
+  const request = {
+    source: 'vertices' as const,
+    aggregates: [{ op: 'count' as const, as: 'count' }],
+    includeDeleted: false,
+  };
+  await service.createVertex(admin, input('A'));
+  assert.deepEqual((await service.retrieve(admin, request)).rows, [{ count: 1 }]);
+  await service.createVertex(admin, input('B'));
+  await assert.rejects(() => service.retrieve(admin, request), {
+    code: 'limit_exceeded',
+    statusCode: 422,
+  });
+});
+
 test('SQLite restores only explicit resources and keeps incident edges deleted', async (t) => {
   const { repository, service, admin } = await setup();
   t.after(() => repository.close());

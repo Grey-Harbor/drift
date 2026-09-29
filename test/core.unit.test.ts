@@ -163,6 +163,29 @@ test('core applies retrieval ID and group limits before returning results', asyn
   );
 });
 
+test('core rejects a retrieval that would scan beyond its ceiling', async () => {
+  const repo = new MockRepository();
+  const service = new DriftService(repo, { retrieveScan: 1 });
+  const boot = await service.bootstrap('scan-limit', 'Scan Limit');
+  const admin = await service.authenticate(boot.key.secret);
+  await service.createVertex(admin, vertexInput);
+  await service.createVertex(admin, vertexInput);
+  repo.listVertices = async () => ({
+    items: [...repo.vertices.values()].slice(0, 1),
+    nextCursor: 'more',
+  });
+
+  await assert.rejects(
+    () =>
+      service.retrieve(admin, {
+        source: 'vertices',
+        aggregates: [{ op: 'count', as: 'count' }],
+        includeDeleted: false,
+      }),
+    { code: 'limit_exceeded', statusCode: 422 },
+  );
+});
+
 test('core rejects retrieval after its execution budget is exhausted', async () => {
   const clockValues = [0, 251];
   const service = new DriftService(

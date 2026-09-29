@@ -36,21 +36,20 @@ export class SqliteDriftRepository implements DriftRepository {
   async close() {
     this.db.close();
   }
-  async createTenant(v: Tenant) {
-    this.db
-      .prepare('INSERT INTO tenants VALUES (@id,@slug,@name,@status,@createdAt,@updatedAt)')
-      .run(v);
+  async bootstrapTenant(tenant: Tenant, adminKey: ApiKey & { secretHash: string }) {
+    this.db.transaction(() => {
+      this.db
+        .prepare('INSERT INTO tenants VALUES (@id,@slug,@name,@status,@createdAt,@updatedAt)')
+        .run(tenant);
+      insertApiKey(this.db, adminKey);
+    })();
   }
   async findTenantBySlug(slug: string) {
     const r = this.db.prepare('SELECT * FROM tenants WHERE slug=?').get(slug);
     return r ? mapTenant(r) : null;
   }
   async createApiKey(v: ApiKey & { secretHash: string }) {
-    this.db
-      .prepare(
-        'INSERT INTO api_keys VALUES (@id,@tenantId,@label,@prefix,@secretHash,@scopes,@createdAt,@lastUsedAt,@revokedAt)',
-      )
-      .run({ ...v, scopes: encodeJson(v.scopes) });
+    insertApiKey(this.db, v);
   }
   async findApiKeyByPrefix(prefix: string) {
     const r = this.db.prepare('SELECT * FROM api_keys WHERE prefix=?').get(prefix);
@@ -74,6 +73,23 @@ export class SqliteDriftRepository implements DriftRepository {
         )
         .run(at, tenantId, id).changes === 1
     );
+  }
+  async rotateApiKey(
+    tenantId: string,
+    id: string,
+    replacement: ApiKey & { secretHash: string },
+    at: string,
+  ) {
+    return this.db.transaction(() => {
+      const changed = this.db
+        .prepare(
+          'UPDATE api_keys SET revoked_at=? WHERE tenant_id=? AND id=? AND revoked_at IS NULL',
+        )
+        .run(at, tenantId, id).changes;
+      if (changed !== 1) return false;
+      insertApiKey(this.db, replacement);
+      return true;
+    })();
   }
   async createVertex(v: Vertex) {
     this.db
@@ -213,6 +229,7 @@ export class SqliteDriftRepository implements DriftRepository {
     direction: TraverseInput['direction'],
     edgeTypes: string[] | undefined,
     includeDeleted: boolean,
+    limit: number,
   ): Promise<Edge[]> {
     return this.graph.findConnected(
       mapEdge,
@@ -221,8 +238,15 @@ export class SqliteDriftRepository implements DriftRepository {
       direction,
       edgeTypes,
       includeDeleted,
+      limit,
     );
   }
+}
+
+function insertApiKey(db: Database.Database, value: ApiKey & { secretHash: string }) {
+  db.prepare(
+    'INSERT INTO api_keys VALUES (@id,@tenantId,@label,@prefix,@secretHash,@scopes,@createdAt,@lastUsedAt,@revokedAt)',
+  ).run({ ...value, scopes: encodeJson(value.scopes) });
 }
 
 function hasActiveEndpoints(

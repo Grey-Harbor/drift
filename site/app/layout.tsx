@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 
-import { RootProvider } from 'fumadocs-ui/provider';
+import { RootProvider } from 'fumadocs-ui/provider/next';
 
 import { SiteHeader } from '@/components/site-header';
 import { siteDescription, siteKeywords, siteName, siteUrl, socialCard } from '@/lib/seo';

@@ -18,7 +18,7 @@ flowchart LR
   Port --> Postgres["Postgres adapter and migrations"]
 ```
 
-HTTP handlers validate strict transport input, authenticate a Bearer key, and call `DriftService`. The service enforces tenancy, scopes, versions, graph integrity, deletion behavior, traversal limits, and retrieval limits. Core modules also execute traversal and declarative retrieval algorithms. The SQLite adapter only maps records and executes repository queries, including the narrow connected-edge lookup required by core traversal.
+HTTP handlers validate strict transport input, authenticate a Bearer key, and call `DriftService`. The service enforces tenancy, scopes, versions, graph integrity, deletion behavior, traversal limits, and retrieval limits. Core modules also execute traversal and declarative retrieval algorithms. Each adapter maps records and executes repository queries, including the bounded connected-edge lookup required by core traversal.
 
 This separation is the portability seam. SQLite and Postgres are independent peer adapters selected only at the server and CLI composition roots. Both preserve `DriftRepository` behavior and pass the same conformance suite; neither changes core service rules or public API behavior. Storage-specific clients, rows, SQL types, migrations, and connection lifecycles remain inside their adapter.
 
@@ -38,7 +38,7 @@ Every authenticated request derives its tenant from the key. Clients never suppl
 | `write` | Create and mutate graph records.                                                       |
 | `admin` | Includes read/write; manages tenant keys, reads deleted records, and restores records. |
 
-Tenant creation and the first admin key are operator actions through Drift's server-local bootstrap CLI. Each successful bootstrap creates one new, uniquely slugged tenant and that tenant's first admin key; it does not add a key to an existing tenant. An admin key can manage keys only inside its own tenant. The companion [Drift CLI](https://drift-cli.greyharborsoftware.com/docs/) wraps tenant-scoped key administration and recovery routes but does not gain tenant-provisioning or instance-wide authority. See [tenants, bootstrap, and API keys](./docs/explanation/tenancy-and-api-keys.md) for the full lifecycle.
+Tenant creation and the first admin key are operator actions through Drift's server-local bootstrap CLI. Each successful bootstrap creates one new, uniquely slugged tenant and that tenant's first admin key in one transaction; a failure leaves neither resource. Rotation also replaces a key atomically, leaving the old key active if the replacement cannot be stored. Bootstrap does not add a key to an existing tenant. An admin key can manage keys only inside its own tenant. The companion [Drift CLI](https://drift-cli.greyharborsoftware.com/docs/) wraps tenant-scoped key administration and recovery routes but does not gain tenant-provisioning or instance-wide authority. See [tenants, bootstrap, and API keys](./docs/explanation/tenancy-and-api-keys.md) for the full lifecycle.
 
 ## Persisted model
 
@@ -103,7 +103,7 @@ Lists provide type/status filters, edge endpoint filters, a deterministic ID-bas
 
 All PATCH and DELETE requests include the current integer `version`. A stale, missing, or already-deleted record causes a `409 Conflict`; successful mutation increments the version. This protects clients from overwriting one another.
 
-Traversal is intentionally constrained: a caller provides a start vertex, direction (`in`, `out`, or `both`), optional edge and returned-vertex type filters, maximum depth, and result limit. Server limits are authoritative.
+Traversal is intentionally constrained: a caller provides a start vertex, direction (`in`, `out`, or `both`), optional edge and returned-vertex type filters, maximum depth, and result limit. Server limits are authoritative, and each connected-edge query is bounded by the remaining result budget.
 
 Retrieval is a synchronous, declarative alternative to lists and traversal. It can scan tenant vertices or edges, apply first-class type, status, and ID filters, project fields (including explicit `data.*` or `metadata.*` paths), group, aggregate, sort, and limit results. It cannot execute caller code, join sources, traverse within a pipeline, filter/group by arbitrary JSON paths, persist outputs, or create jobs.
 

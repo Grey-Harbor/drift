@@ -2,5 +2,13 @@
   "semi": true,
   "singleQuote": true,
   "printWidth": 100,
-  "trailingComma": "all"
+  "trailingComma": "all",
+  "overrides": [
+    {
+      "files": "site/next-env.d.ts",
+      "options": {
+        "singleQuote": false
+      }
+    }
+  ]
 }
