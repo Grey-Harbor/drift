@@ -22,6 +22,8 @@ permissions:
 jobs:
   verify:
     uses: ./.github/workflows/ci.yml
+    with:
+      release_ref: ${{ inputs.tag || github.ref_name }}
 
   publish:
     needs: verify
