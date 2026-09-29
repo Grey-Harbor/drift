@@ -23,6 +23,8 @@ One successful bootstrap command creates exactly two persisted resources:
 
 The command output includes a raw key in the form `drift_<prefix>.<secret>`. The prefix identifies the stored key record; Drift hashes and verifies the secret. The raw secret is shown once only and is not stored in recoverable form.
 
+The tenant and initial admin key are committed together. If the key cannot be stored, bootstrap leaves no tenant behind. Rotation likewise commits revocation and replacement together; a failed replacement leaves the previous key active.
+
 When a client sends `Authorization: Bearer <raw-key>`, Drift verifies the key and derives its tenant ID and scopes. The client does not send `tenantId`, choose a tenant header, or gain access to records from another tenant by changing an ID in a URL or request body.
 
 ## Bootstrap creates a new tenant

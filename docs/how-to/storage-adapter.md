@@ -20,10 +20,10 @@ Automation may scaffold files, map explicitly corresponding fields, run conforma
 
 Add the adapter under `src/adapters/<storage>/` with focused modules for connection lifecycle, migrations, record mapping, and repository operations. Implement in this order:
 
-1. Tenant and API-key persistence so authentication can run through the adapter.
+1. Tenant and API-key persistence, including atomic tenant bootstrap and key rotation, so authentication can run through the adapter.
 2. Vertex and edge reads and writes, including tenant-scoped lookup and atomic version-aware mutation.
 3. Filtered lists with deterministic ordering and opaque pagination.
-4. `findConnectedEdges` with direction, edge-type, tenant, and deleted-record filters.
+4. `findConnectedEdges` with direction, edge-type, tenant, and deleted-record filters, deterministic ID ordering, and a query-level result limit.
 5. Adapter lifecycle and migration entrypoints without importing adapter types into `src/core`, `src/contracts`, or `src/api`.
 
 The adapter returns asynchronous persistence outcomes such as a matching record or `null`; `DriftService` continues to own authorization, traversal, retrieval, graph-integrity policy, optimistic-concurrency policy, and public errors. Multi-statement atomic behavior belongs in a named repository operation rather than a generic transaction callback, so synchronous and asynchronous adapters preserve the same boundary safely.
@@ -34,12 +34,13 @@ Verify all of the following before the adapter can be considered compatible:
 
 - tenant isolation applies to every read and write;
 - API-key secrets remain hashed and are never returned from lookup;
+- bootstrap creates its tenant and initial admin key together, and failed key rotation leaves the old key active;
 - JSON payloads round-trip as valid Drift `Json` values;
 - IDs, timestamps, statuses, nullability, and versions map without loss;
 - update, soft deletion, and restore are atomic with version checks;
 - deleting a vertex and its active incident edges is one transaction;
 - active graph reads hide deleted records unless explicitly requested by an admin;
-- lists paginate deterministically and connected-edge lookup respects its filters; and
+- lists paginate deterministically and connected-edge lookup respects its filters and result limit; and
 - no storage-specific type crosses the repository boundary.
 
 Run the reusable repository conformance suite unchanged against every adapter. Add adapter-specific tests for migrations, connection failure, transaction rollback, JSON representation, indexes, concurrency, and database-version compatibility. An architecture test must reject storage-client imports from core, contracts, and HTTP modules.
