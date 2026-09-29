@@ -55,9 +55,9 @@ export class DriftService {
       createdAt: at,
       updatedAt: at,
     };
-    await this.repo.createTenant(tenant);
-    const issued = await this.issueKey(tenant.id, label, ['admin']);
-    return { tenant, key: issued };
+    const issued = createApiKey(tenant.id, label, ['admin'], at);
+    await this.repo.bootstrapTenant(tenant, { ...issued.apiKey, secretHash: issued.secretHash });
+    return { tenant, key: { apiKey: issued.apiKey, secret: issued.secret } };
   }
   async authenticate(raw: string): Promise<Principal> {
     const parsed = parseApiKey(raw);
@@ -92,8 +92,18 @@ export class DriftService {
   }
   async rotateKey(p: Principal, id: string, label: string, scopes: Scope[]) {
     requireAdmin(p);
-    await this.revokeKey(p, id);
-    return await this.issueKey(p.tenantId, label, scopes);
+    const at = now();
+    const issued = createApiKey(p.tenantId, label, scopes, at);
+    if (
+      !(await this.repo.rotateApiKey(
+        p.tenantId,
+        id,
+        { ...issued.apiKey, secretHash: issued.secretHash },
+        at,
+      ))
+    )
+      throw new DriftError('not_found', 'API key not found or already revoked', 404);
+    return { apiKey: issued.apiKey, secret: issued.secret };
   }
   async createVertex(p: Principal, input: VertexInput) {
     requireScope(p, 'write');

@@ -22,7 +22,7 @@ export function runRepositoryConformance(name: string, createRepository: Reposit
     t.after(() => repository.close());
     const service = new DriftService(repository);
     const boot = await service.bootstrap(`${name.toLowerCase()}-${crypto.randomUUID()}`, name);
-    return { service, admin: await service.authenticate(boot.key.secret) };
+    return { repository, service, admin: await service.authenticate(boot.key.secret) };
   };
 
   test(`${name} isolates tenants and never lists API-key hashes`, async (t) => {
@@ -36,6 +36,46 @@ export function runRepositoryConformance(name: string, createRepository: Reposit
     );
     const keys = await service.listKeys(admin);
     assert.equal('secretHash' in keys[0]!, false);
+  });
+
+  test(`${name} keeps bootstrap and key rotation atomic`, async (t) => {
+    const { repository, service, admin } = await setup(t);
+    const old = await service.createKey(admin, 'old', ['read']);
+    const existing = await service.createKey(admin, 'existing', ['read']);
+    const stored = await repository.findApiKeyByPrefix(existing.apiKey.prefix);
+    assert.ok(stored);
+    const at = new Date().toISOString();
+
+    await assert.rejects(() =>
+      repository.rotateApiKey(
+        admin.tenantId,
+        old.apiKey.id,
+        { ...stored, id: crypto.randomUUID() },
+        at,
+      ),
+    );
+    assert.equal((await service.authenticate(old.secret)).keyId, old.apiKey.id);
+
+    const orphanSlug = `rollback-${crypto.randomUUID()}`;
+    const orphanId = crypto.randomUUID();
+    await assert.rejects(() =>
+      repository.bootstrapTenant(
+        {
+          id: orphanId,
+          slug: orphanSlug,
+          name: 'Rollback',
+          status: 'active',
+          createdAt: at,
+          updatedAt: at,
+        },
+        { ...stored, id: crypto.randomUUID(), tenantId: orphanId },
+      ),
+    );
+    assert.equal(await repository.findTenantBySlug(orphanSlug), null);
+
+    const rotated = await service.rotateKey(admin, old.apiKey.id, 'replacement', ['read']);
+    await assert.rejects(() => service.authenticate(old.secret), { code: 'unauthorized' });
+    assert.equal((await service.authenticate(rotated.secret)).keyId, rotated.apiKey.id);
   });
 
   test(`${name} preserves JSON values, filters, and cursors`, async (t) => {

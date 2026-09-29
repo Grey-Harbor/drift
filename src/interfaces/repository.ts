@@ -10,13 +10,19 @@ import type {
 
 export interface DriftRepository {
   close(): Promise<void>;
-  createTenant(tenant: Tenant): Promise<void>;
+  bootstrapTenant(tenant: Tenant, adminKey: ApiKey & { secretHash: string }): Promise<void>;
   findTenantBySlug(slug: string): Promise<Tenant | null>;
   createApiKey(key: ApiKey & { secretHash: string }): Promise<void>;
   findApiKeyByPrefix(prefix: string): Promise<(ApiKey & { secretHash: string }) | null>;
   touchApiKey(id: string, at: string): Promise<void>;
   listApiKeys(tenantId: string): Promise<ApiKey[]>;
   revokeApiKey(tenantId: string, id: string, at: string): Promise<boolean>;
+  rotateApiKey(
+    tenantId: string,
+    id: string,
+    replacement: ApiKey & { secretHash: string },
+    at: string,
+  ): Promise<boolean>;
   createVertex(vertex: Vertex): Promise<void>;
   getVertex(tenantId: string, id: string, includeDeleted: boolean): Promise<Vertex | null>;
   listVertices(tenantId: string, options: ListOptions): Promise<Page<Vertex>>;

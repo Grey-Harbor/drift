@@ -16,8 +16,9 @@ export class MockRepository implements DriftRepository {
   readonly edges = new Map<string, Edge>();
   readonly calls = { createVertex: 0, createEdge: 0, edgeLookup: 0 };
   async close() {}
-  async createTenant(tenant: Tenant) {
+  async bootstrapTenant(tenant: Tenant, adminKey: ApiKey & { secretHash: string }) {
     this.tenants.set(tenant.slug, tenant);
+    this.keys.set(adminKey.prefix, adminKey);
   }
   async findTenantBySlug(slug: string) {
     return this.tenants.get(slug) ?? null;
@@ -40,6 +41,20 @@ export class MockRepository implements DriftRepository {
     for (const key of this.keys.values())
       if (key.tenantId === tenantId && key.id === id && !key.revokedAt) {
         key.revokedAt = at;
+        return true;
+      }
+    return false;
+  }
+  async rotateApiKey(
+    tenantId: string,
+    id: string,
+    replacement: ApiKey & { secretHash: string },
+    at: string,
+  ) {
+    for (const key of this.keys.values())
+      if (key.tenantId === tenantId && key.id === id && !key.revokedAt) {
+        key.revokedAt = at;
+        this.keys.set(replacement.prefix, replacement);
         return true;
       }
     return false;
