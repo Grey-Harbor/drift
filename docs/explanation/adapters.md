@@ -1,6 +1,6 @@
 # Why Drift uses storage adapters
 
-Use this explanation when deciding where persistence behavior belongs or evaluating a new storage technology. Drift is designed so storage can change without changing graph behavior. A storage adapter implements the `DriftRepository` interface in `src/interfaces/repository.ts`; SQLite is the first adapter, while a future Postgres adapter must preserve the same observable contract.
+Use this explanation when deciding where persistence behavior belongs or evaluating a new storage technology. Drift is designed so storage can change without changing graph behavior. A storage adapter implements the `DriftRepository` interface in `src/interfaces/repository.ts`; SQLite and PostgreSQL are current peer adapters, and any future adapter must preserve the same observable contract.
 
 ## The boundary
 
