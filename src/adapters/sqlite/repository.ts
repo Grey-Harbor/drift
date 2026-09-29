@@ -229,6 +229,7 @@ export class SqliteDriftRepository implements DriftRepository {
     direction: TraverseInput['direction'],
     edgeTypes: string[] | undefined,
     includeDeleted: boolean,
+    limit: number,
   ): Promise<Edge[]> {
     return this.graph.findConnected(
       mapEdge,
@@ -237,6 +238,7 @@ export class SqliteDriftRepository implements DriftRepository {
       direction,
       edgeTypes,
       includeDeleted,
+      limit,
     );
   }
 }

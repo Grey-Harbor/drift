@@ -306,6 +306,7 @@ export class PostgresDriftRepository implements DriftRepository {
     direction: TraverseInput['direction'],
     edgeTypes: string[] | undefined,
     includeDeleted: boolean,
+    limit: number,
   ) {
     return await this.graph.findConnected(
       mapEdge,
@@ -314,6 +315,7 @@ export class PostgresDriftRepository implements DriftRepository {
       direction,
       edgeTypes,
       includeDeleted,
+      limit,
     );
   }
 }

@@ -27,7 +27,7 @@ An adapter must implement every member of the asynchronous `DriftRepository`, in
 The port has two intentional shapes:
 
 1. **Record operations** persist or retrieve one tenant-scoped record at a time. They use the supplied tenant ID and never infer it from client input.
-2. **Persistence primitives** support core algorithms without embedding them. `findConnectedEdges` returns edges adjacent to a supplied frontier according to direction, edge-type, and deleted-record filters. Core traversal decides how often to call it, how to build the next frontier, and how to limit results.
+2. **Persistence primitives** support core algorithms without embedding them. `findConnectedEdges` returns at most the requested number of edges adjacent to a supplied frontier, in deterministic ID order, according to direction, edge-type, and deleted-record filters. Core traversal decides how often to call it, how to build the next frontier, and the remaining result budget passed to each lookup.
 
 List methods must preserve the documented filters, deterministic ID ordering, opaque cursor behavior, page boundaries, and deleted-record handling. Update and delete methods must honor the supplied version atomically, returning `null` when the expected active record/version does not match. The service translates that outcome into the public conflict response.
 

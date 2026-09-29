@@ -58,5 +58,6 @@ export interface DriftRepository {
     direction: TraverseInput['direction'],
     edgeTypes: string[] | undefined,
     includeDeleted: boolean,
+    limit: number,
   ): Promise<Edge[]>;
 }

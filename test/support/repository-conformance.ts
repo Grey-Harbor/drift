@@ -268,6 +268,52 @@ export function runRepositoryConformance(name: string, createRepository: Reposit
     );
   });
 
+  test(`${name} bounds connected-edge lookups in deterministic ID order`, async (t) => {
+    const { repository, service, admin } = await setup(t);
+    const source = await service.createVertex(admin, input('Source'));
+    const targets = await Promise.all(
+      ['One', 'Two', 'Three'].map((title) => service.createVertex(admin, input(title))),
+    );
+    const edges = await Promise.all(
+      targets.map((target) =>
+        service.createEdge(admin, {
+          fromVertexId: source.id,
+          toVertexId: target.id,
+          type: 'connects',
+          status: 'active',
+          data: {},
+          metadata: {},
+        }),
+      ),
+    );
+    const found = await repository.findConnectedEdges(
+      admin.tenantId,
+      [source.id],
+      'out',
+      undefined,
+      false,
+      2,
+    );
+    assert.deepEqual(
+      found.map((edge) => edge.id),
+      edges
+        .map((edge) => edge.id)
+        .sort()
+        .slice(0, 2),
+    );
+    const traversed = await service.traverse(admin, {
+      start: source.id,
+      direction: 'out',
+      depth: 1,
+      limit: 2,
+      includeDeleted: false,
+    });
+    assert.deepEqual(
+      traversed.edges.map((edge) => edge.id),
+      found.map((edge) => edge.id),
+    );
+  });
+
   test(`${name} treats opaque cursors and non-UUID IDs consistently`, async (t) => {
     const { service, admin } = await setup(t);
     const vertex = await service.createVertex(admin, input('Versioned'));

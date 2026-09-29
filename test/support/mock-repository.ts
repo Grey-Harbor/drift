@@ -165,19 +165,23 @@ export class MockRepository implements DriftRepository {
     direction: TraverseInput['direction'],
     edgeTypes: string[] | undefined,
     includeDeleted: boolean,
+    limit: number,
   ) {
     this.calls.edgeLookup++;
-    return [...this.edges.values()].filter((edge) => {
-      const matchesTenant = edge.tenantId === tenantId;
-      const matchesDeletion = includeDeleted || !edge.deletedAt;
-      const matchesType = !edgeTypes?.length || edgeTypes.includes(edge.type);
-      const matchesDirection =
-        direction === 'out'
-          ? vertexIds.includes(edge.fromVertexId)
-          : direction === 'in'
-            ? vertexIds.includes(edge.toVertexId)
-            : vertexIds.includes(edge.fromVertexId) || vertexIds.includes(edge.toVertexId);
-      return matchesTenant && matchesDeletion && matchesType && matchesDirection;
-    });
+    return [...this.edges.values()]
+      .filter((edge) => {
+        const matchesTenant = edge.tenantId === tenantId;
+        const matchesDeletion = includeDeleted || !edge.deletedAt;
+        const matchesType = !edgeTypes?.length || edgeTypes.includes(edge.type);
+        const matchesDirection =
+          direction === 'out'
+            ? vertexIds.includes(edge.fromVertexId)
+            : direction === 'in'
+              ? vertexIds.includes(edge.toVertexId)
+              : vertexIds.includes(edge.fromVertexId) || vertexIds.includes(edge.toVertexId);
+        return matchesTenant && matchesDeletion && matchesType && matchesDirection;
+      })
+      .sort((left, right) => left.id.localeCompare(right.id))
+      .slice(0, limit);
   }
 }
