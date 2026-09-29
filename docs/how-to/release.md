@@ -7,9 +7,8 @@ or client SDK in this release.
 
 ## Prepare the release
 
-Confirm the version is `0.2.0` in `package.json` and `package-lock.json`. Review
-the v0.2.0 section of `CHANGELOG.md` and replace its `pending` date only when
-the release is approved. Then complete the service verification steps in
+Confirm the version is `0.2.0` in `package.json` and `package-lock.json`, and
+review the dated v0.2.0 section of `CHANGELOG.md`. Then complete the service verification steps in
 [build Drift from source](../tutorial/building-from-source.md). That tutorial
 is the source of truth for local install, build, CLI, site, and Pages
 verification commands. Review the site dependency audit and require the
@@ -35,7 +34,8 @@ git push origin v0.2.0
 
 The **Release container image** workflow reruns verification, builds
 `linux/amd64` and `linux/arm64` images, publishes `v0.2.0` and `latest`, attaches
-build provenance, and creates a GitHub release with the manifest digest.
+build provenance, and creates a GitHub release titled `Version 0.2.0` with the
+manifest digest. Release tags use `vX.Y.Z`; titles use `Version X.Y.Z`.
 
 ## Recover a failed tag release
 
