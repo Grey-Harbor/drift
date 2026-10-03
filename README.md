@@ -8,6 +8,8 @@ It gives client applications a calm, stable path to store things, connect them, 
 
 SQLite is the lightweight default. PostgreSQL is also available, with an offline migration path from SQLite.
 
+If you'd like to explore the project site, [Click Here](https://drift.greyharborsoftware.com) for the latest overview and supporting pages.
+
 ## Start here
 
 - [Getting started tutorial](./docs/tutorial/getting-started.md) — bootstrap a tenant, create a graph, traverse it, and run an aggregate.
